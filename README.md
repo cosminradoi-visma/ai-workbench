@@ -32,7 +32,8 @@ Sources: [`0-meta/decisions/research.md`](0-meta/decisions/research.md).
 3. **Connect your main repo:** from the workbench, run `/kb-link-repo` and give it the repo path.
 4. **End your next working session with "capture".** That's the habit that makes it work.
 
-Needs: Claude Code, git, Python 3 (for the hooks and the check). On Windows, use WSL.
+Needs: Claude Code, git, Python 3.8+ (for the hooks and the check). On Windows: WSL, or Git for Windows plus
+Python from python.org. The Microsoft Store `python3` stub doesn't count; the launcher skips it.
 Copilot, Cursor and Codex read `AGENTS.md`, so the KB works there too. The skills and hooks are Claude Code's.
 
 ## What's where

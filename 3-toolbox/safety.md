@@ -1,7 +1,7 @@
 ---
 updated: 2026-10-02
-status: assumed
-verified: Claude Code docs and public sources, 2026-10-02. Your company's own AI policy and data classification win wherever they differ.
+status: verified
+verified: Claude Code docs; Visma Group AI Guideline and IS-010 class names; Visma Solutions' Claude guide (2026-10-02) as the worked example. Your company's own policy wins wherever it differs.
 ---
 
 # Safety
@@ -11,8 +11,8 @@ Short version first; the reasons follow.
 
 ## The six rules
 
-1. **Restricted data never goes to a model.** Secrets, customer records, payroll and HR data,
-   personal data, security findings. Use synthetic data in prompts, fixtures and examples.
+1. **Customer data and sensitive personal data never go to a model.** Nor do secrets, or Restricted
+   information without written approval. Use synthetic data in prompts, fixtures and examples.
 2. **Company accounts and approved tools only.** Never a personal subscription for company code.
    Consumer plans can train on your data and keep it for years.
 3. **You own what you merge.** Read every diff. If you can't explain it, don't ship it.
@@ -25,20 +25,34 @@ Short version first; the reasons follow.
 6. **Rules that must hold go in settings and hooks, not in prompts.** A prompt is advice;
    a deny rule is a wall.
 
-## What may go to a model
+## What may go to a model (Visma)
 
-A suggested scheme. **Check your company's actual classification and AI policy, and
-ask Security when in doubt.**
+Visma Group classifies information in four classes (**IS-010 Information Classification and
+Handling**): Public · Internal · Restricted · Customer-owned. Your company may implement it
+with a **stricter local scheme**. Visma Solutions, for example, splits it into ten codes and
+publishes a "Using Claude with company data" guide. **Find your company's version and follow
+it; it wins over this table.** Ask your security/privacy team when in doubt, and apply the stricter class.
 
-| Class | Examples | To an approved company tool? |
-|-------|----------|------------------------------|
-| Public | Open-source code, public docs | Yes |
-| Internal | Internal docs, non-sensitive code, architecture notes | Yes |
-| Confidential | Proprietary source code, unreleased plans, internal designs | Yes, on the approved enterprise tenant only, with no unapproved MCP servers |
-| Restricted | Credentials, personal data, customer and payroll records, production data, open vulnerabilities | **No**, unless your DPO and Security have approved a specific path |
+| Group class | Examples | Into Claude on your company account? |
+|-------------|----------|---------------------------------------|
+| Public | Open-source code, public docs, press releases | Yes |
+| Internal | Internal docs, guidelines, most source code and designs, meeting notes | Yes, minimised: only what the task needs |
+| Restricted | M&A, restructuring, unreleased financials, security findings (in some schemes) | **No**, unless you hold prior written approval |
+| Customer-owned | Anything customers hold in our products: payroll, accounting, HR records, support extracts | **Never.** There is nothing to apply for |
+| Personal data | Colleagues, contacts, candidates | Only one-off and minimised (roles, not names). Recurring or automated use needs your DPM |
+| Sensitive personal data | Health, sick leave, union membership (GDPR Art. 9) | **Never** |
 
-Under GDPR, putting personal data in a prompt is processing: it needs a lawful basis,
-a processor agreement and data minimisation. Synthetic data needs none of that.
+And from the **Visma Group AI Guideline** (Group Legal & Compliance):
+
+- **Never use output you don't understand** or can't explain.
+- **AI-generated code:** check it isn't copied from licensed public code (search GitHub; the more
+  specialised the code, the higher the risk), run your licence-compliance scans, and follow your
+  company's approval for AI-generated code in products.
+- **Customer data only if the customer contract allows it.**
+- **Never use an AI tool to rank, score, profile or monitor people.** A human makes decisions about people.
+- **Company account only.** Personal Claude Pro or Max accounts are not approved for company data.
+
+Under GDPR, personal data in a prompt is processing, and the data leaves the EU/EEA. Synthetic data avoids both problems.
 
 ## The lethal trifecta
 
@@ -72,7 +86,7 @@ Deny rules are a speed bump. The sandbox is the wall. Review is the gate that co
 |------|-----|
 | `plan` | Unfamiliar code, large changes: the agent reads and proposes, changes nothing |
 | `default` / `acceptEdits` | Everyday work |
-| `auto` | Classifier-approved actions. Check that your company policy allows it |
+| `auto` | Classifier-approved actions. Some Visma organisations disable it in managed settings; follow your company's policy |
 | `bypassPermissions` | **Only** inside a disposable devcontainer with no secrets. The personal kit disables it |
 
 ## Supply chain
@@ -95,11 +109,19 @@ Deny rules are a speed bump. The sandbox is the wall. Review is the gate that co
   turns the command off.
 - Commercial plans (Team, Enterprise, API) don't train on your data unless your org opts in.
 
-## If something leaks
+## If something goes wrong
 
-1. **Rotate the secret now.** Deleting the commit doesn't help: it's in history, caches and transcripts.
+**A secret leaked** (token, key, password):
+1. **Rotate it now.** Deleting the commit doesn't help: it's in history, caches and transcripts.
 2. Tell your security contact (`1-me/team.md`), even if it was "only a test key".
-3. Add a line to `1-me/learnings.md` and a check to the guard hook so it can't happen twice.
+
+**Banned data went into the model** (customer data, a payroll extract, a sick-leave note):
+1. **Stop using that conversation, and don't delete it.** Your DPM needs it to see what was exposed.
+   In Claude Code the conversation is the local transcript under `~/.claude/projects/`. Copy it aside before the cleanup period removes it.
+2. **Report it the same working day** to your DPM or security team. Accidental personal data goes to **security@visma.com**.
+   Reporting fast is expected behaviour. Not reporting is the problem.
+
+Afterwards: add a line to `1-me/learnings.md` and a check to the guard hook so it can't happen twice.
 
 ## Why this matters beyond your repo
 

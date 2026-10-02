@@ -10,6 +10,7 @@ diff, and asks first. To do it by hand, copy the pieces you want.
 | `settings.json` | `~/.claude/settings.json` (merge) | Disables bypass mode; denies reads of cloud credentials, SSH keys and `.env`; asks before push; keeps transcripts 14 days; turns off feedback uploads; adds the status line |
 | `settings.strict.json` | merge too, if you want the wall | Sandbox for Bash: package registries only on the network, no reads of credential folders. Linux/WSL needs `bubblewrap` and `socat`; check with `/sandbox` |
 | `statusline.py` | `~/.claude/statusline.py` | Shows model, context % (with `!` past 60%) and cost |
+| `py` | `~/.claude/py` | Runs it with the first working Python 3 (skips Windows' fake `python3`) |
 
 Notes:
 - The kit assumes your workbench is at `~/workbench`. `kb-setup` fixes the path if it isn't.

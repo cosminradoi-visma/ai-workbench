@@ -1,0 +1,11 @@
+#!/bin/sh
+# Runs a Python hook with the first working Python 3. Windows ships a fake `python3`
+# (a Microsoft Store stub), so "is it on PATH" is not enough: each candidate is tried.
+# No Python at all → exit 1: Claude Code shows the error, and the hook lets the call through.
+for p in python3 python py; do
+  if command -v "$p" >/dev/null 2>&1 && "$p" -c "import sys; sys.exit(sys.version_info < (3, 8))" >/dev/null 2>&1; then
+    exec "$p" "$@"
+  fi
+done
+echo "No Python 3 found, so the guard hooks are NOT running. Install Python 3 (https://www.python.org/downloads/)." >&2
+exit 1

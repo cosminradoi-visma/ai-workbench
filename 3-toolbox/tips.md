@@ -67,6 +67,24 @@ equivalents for other tools are at the end.
     what you want on untrusted input. The JSON includes `total_cost_usd`.
 25. **Tell it to edit CLAUDE.md.** The old `#` shortcut is gone; "add to CLAUDE.md: …" does the same.
 
+## Is it any good, and is it worth it?
+
+26. **Keep five golden tasks per repo:** real, small, with a known right answer. Run them headless
+    after you change CLAUDE.md, a skill or the model, and count passes. That's your eval.
+27. **Judge with something the agent can't edit:** tests it didn't write, a reviewer subagent with
+    fresh context, a human reading the diff. "The agent says the tests pass" is not evidence.
+28. **Know the cost per task:** `/usage` in a session, `total_cost_usd` in headless JSON. If a task
+    costs more than doing it yourself and isn't getting cheaper, stop delegating it.
+29. **Not worth it when:** the task is a one-liner you'd type faster, the spec is in your head and nowhere
+    else, or nothing can check the result.
+
+## Unattended (CI, schedules)
+
+30. **Headless needs a fence:** `--bare` (ignore repo config), `--max-turns`, an `--allowedTools`
+    allowlist, a token with the least scope, and output that a human or a test checks before anything merges.
+31. **Never `bypassPermissions` outside a throwaway container.** In CI the container is the boundary.
+32. **Share a team's skills and hooks by committing them** (`.claude/` in the repo). For many repos, a plugin marketplace.
+
 ## Other tools
 
 | | Instructions | Scoped rules | Skills | Hooks |

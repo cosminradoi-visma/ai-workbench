@@ -46,7 +46,7 @@ Explain in two lines what `3-toolbox/personal-kit/` does, then offer each piece:
 - `~/.claude/settings.json`: **merge** the JSON (union of `deny`/`ask` lists, keep existing keys).
   Show the resulting diff and get a yes before writing. Offer `settings.strict.json` only if
   they want the sandbox; check `/sandbox` works on their machine first.
-- `~/.claude/statusline.py`: copy.
+- `~/.claude/statusline.py` and `~/.claude/py` (the Python launcher it runs through): copy.
 - Global skills: copy `kb-capture`, `kb-decide` and `kb-vet` to `~/.claude/skills/`, so they work from any repo.
 
 ## 6. Check

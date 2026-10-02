@@ -13,7 +13,7 @@
       {
         "matcher": "startup|resume|clear",
         "hooks": [
-          { "type": "command", "command": "\"$(command -v python3 || command -v python)\" \"$CLAUDE_PROJECT_DIR/0-meta/scripts/kb_check.py\" --brief", "timeout": 15 }
+          { "type": "command", "command": "sh \"$CLAUDE_PROJECT_DIR/3-toolbox/project-kit/.claude/hooks/py\" \"$CLAUDE_PROJECT_DIR/0-meta/scripts/kb_check.py\" --brief", "timeout": 15 }
         ]
       }
     ],
@@ -21,14 +21,14 @@
       {
         "matcher": "Bash|Read|Edit|Write|MultiEdit|Grep",
         "hooks": [
-          { "type": "command", "command": "\"$(command -v python3 || command -v python)\" \"$CLAUDE_PROJECT_DIR/3-toolbox/project-kit/.claude/hooks/guard.py\"", "timeout": 10 }
+          { "type": "command", "command": "sh \"$CLAUDE_PROJECT_DIR/3-toolbox/project-kit/.claude/hooks/py\" \"$CLAUDE_PROJECT_DIR/3-toolbox/project-kit/.claude/hooks/guard.py\"", "timeout": 10 }
         ]
       }
     ],
     "UserPromptSubmit": [
       {
         "hooks": [
-          { "type": "command", "command": "\"$(command -v python3 || command -v python)\" \"$CLAUDE_PROJECT_DIR/3-toolbox/project-kit/.claude/hooks/prompt_guard.py\"", "timeout": 10 }
+          { "type": "command", "command": "sh \"$CLAUDE_PROJECT_DIR/3-toolbox/project-kit/.claude/hooks/py\" \"$CLAUDE_PROJECT_DIR/3-toolbox/project-kit/.claude/hooks/prompt_guard.py\"", "timeout": 10 }
         ]
       }
     ]

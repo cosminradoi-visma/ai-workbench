@@ -2,8 +2,8 @@
 """UserPromptSubmit guard for Claude Code. Standard library only.
 
 Stops a prompt before it reaches the model if it contains something that looks like a
-secret (API tokens, private keys, passwords in connection strings) or a real IBAN
-(checksum-validated, so random digits don't trigger it).
+secret (API tokens, private keys, passwords in connection strings), a real IBAN or a Romanian
+CNP (both checksum-validated, so random digits don't trigger it).
 
 Test data on purpose? Start the prompt with "synthetic:" and it passes. Extend PATTERNS
 with the identifiers your product handles (national ID formats, customer numbers).
@@ -22,6 +22,7 @@ PATTERNS = [
     (r"(?i)(postgres(ql)?|mysql|mongodb(\+srv)?|sqlserver|redis|amqp)://[^\s:/@]+:[^\s@]+@", "a connection string with a password"),
     (r"(?i)(AccountKey|SharedAccessSignature|Password|Pwd)=[^;\s]{8,}", "a connection string secret"),
 ]
+CNP = re.compile(r"\b([1-9]\d{12})\b")  # Romanian personal numeric code (CNP)
 IBAN = re.compile(r"\b([A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]{4}){2,7}(?:[ ]?[A-Z0-9]{1,4})?)\b")
 
 
@@ -31,6 +32,14 @@ def valid_iban(raw):
         return False
     digits = "".join(str(int(c, 36)) for c in s[4:] + s[:4])
     return int(digits) % 97 == 1
+
+
+def valid_cnp(s):
+    weights = "279146358279"
+    total = sum(int(d) * int(w) for d, w in zip(s[:12], weights))
+    check = total % 11
+    month, day = int(s[3:5]), int(s[5:7])
+    return (1 if check == 10 else check) == int(s[12]) and 1 <= month <= 12 and 1 <= day <= 31
 
 
 def main():
@@ -43,6 +52,8 @@ def main():
     found = [label for pattern, label in PATTERNS if re.search(pattern, prompt)]
     if any(valid_iban(m.group(1)) for m in IBAN.finditer(prompt)):
         found.append("a valid IBAN")
+    if any(valid_cnp(m.group(1)) for m in CNP.finditer(prompt)):
+        found.append("a Romanian personal numeric code (CNP)")
     if found:
         print(
             f"Prompt not sent: it contains what looks like {', '.join(found)}. "

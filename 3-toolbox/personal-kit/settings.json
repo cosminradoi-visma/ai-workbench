@@ -26,6 +26,6 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "\"$(command -v python3 || command -v python)\" ~/.claude/statusline.py"
+    "command": "sh ~/.claude/py ~/.claude/statusline.py"
   }
 }

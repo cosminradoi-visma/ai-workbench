@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Workbench Cheat Sheet</title>
+<style>
+  :root {
+    --ink: #1f1a1d; --muted: #5d5358; --line: #d9d2cc; --bg: #ffffff; --panel: #f6f2ec;
+    --accent: #2f6b4f; --warn: #a3262f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --ink: #ece7e2; --muted: #b3a9ae; --line: #3a3336; --bg: #17141a; --panel: #211d24; --accent: #7cc4a0; --warn: #ef7c84; }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--ink); font: 9.6pt/1.38 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .page { max-width: 210mm; margin: 0 auto; padding: 10mm 11mm; }
+  header { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid var(--ink); padding-bottom: 2.5mm; margin-bottom: 3.5mm; gap: 4mm; flex-wrap: wrap; }
+  h1 { font-size: 17pt; letter-spacing: -0.01em; }
+  header p { color: var(--muted); font-size: 8.6pt; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3.5mm 5mm; }
+  section { break-inside: avoid; }
+  h2 { font-size: 9pt; text-transform: uppercase; letter-spacing: 0.07em; color: var(--accent); margin-bottom: 1.4mm; border-bottom: 1px solid var(--line); padding-bottom: 0.8mm; }
+  ol, ul { padding-left: 4.2mm; }
+  li { margin-bottom: 0.8mm; }
+  code { font: 8.6pt ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace; background: var(--panel); padding: 0 1mm; border-radius: 1mm; }
+  table { width: 100%; border-collapse: collapse; font-size: 8.8pt; }
+  td, th { text-align: left; padding: 0.8mm 1.2mm; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  .loop { display: flex; gap: 1.5mm; flex-wrap: wrap; align-items: center; font-size: 9pt; }
+  .loop span { background: var(--panel); border-radius: 1.5mm; padding: 1mm 2mm; }
+  .no { color: var(--warn); font-weight: 650; }
+  .yes { color: var(--accent); font-weight: 650; }
+  .wide { grid-column: 1 / -1; }
+  footer { margin-top: 3.5mm; color: var(--muted); font-size: 8pt; border-top: 1px solid var(--line); padding-top: 1.5mm; }
+  @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } .page { padding: 16px; } }
+  @media print { body { background: #fff; color: #000; } .page { padding: 8mm 9mm; } @page { size: A4; margin: 0; } }
+</style>
+</head>
+<body>
+<main class="page">
+  <header>
+    <h1>Workbench · cheat sheet</h1>
+    <p>Same models for everyone. Nobody else has your context. · github.com/cosminradoi-visma/ai-workbench</p>
+  </header>
+
+  <div class="grid">
+    <section class="wide">
+      <h2>The loop</h2>
+      <div class="loop">
+        <span><code>NOW.md</code> → <code>state.md</code> (~1k tokens)</span> →
+        <span>agent works; hooks guard it</span> →
+        <span><code>kb-capture</code>: state · log · decisions · learnings (2 min)</span> →
+        <span>weekly <code>kb-tidy</code></span>
+      </div>
+    </section>
+
+    <section>
+      <h2>Skills</h2>
+      <table>
+        <tr><td><code>/kb-setup</code></td><td>once: the interview</td></tr>
+        <tr><td><code>/kb-link-repo</code></td><td>once per repo: AGENTS.md, guards, link</td></tr>
+        <tr><td><code>kb-capture</code></td><td>end of every real session</td></tr>
+        <tr><td><code>kb-decide</code></td><td>a real choice was made</td></tr>
+        <tr><td><code>kb-intake</code></td><td>file what's in <code>inbox/</code></td></tr>
+        <tr><td><code>kb-tidy</code></td><td>weekly, or when the start-up check complains</td></tr>
+        <tr><td><code>kb-vet</code></td><td>before installing any skill, plugin or MCP</td></tr>
+      </table>
+    </section>
+
+    <section>
+      <h2>Where does it go?</h2>
+      <table>
+        <tr><td>How agents work in one repo</td><td>repo <code>AGENTS.md</code></td></tr>
+        <tr><td>One part of a repo</td><td><code>.claude/rules/*.md</code> + <code>paths:</code></td></tr>
+        <tr><td>Where work stands / what happened</td><td><code>state.md</code> / <code>log.md</code></td></tr>
+        <tr><td>Why it was decided</td><td><code>decisions/adr-NNN</code></td></tr>
+        <tr><td>A procedure you repeat</td><td>a skill</td></tr>
+        <tr><td>Must always / never happen</td><td>a hook or a deny rule</td></tr>
+        <tr><td>A live system</td><td>MCP (or a CLI)</td></tr>
+      </table>
+    </section>
+
+    <section>
+      <h2>Six safety rules</h2>
+      <ol>
+        <li><span class="no">Never</span> customer data, sensitive personal data or secrets. Restricted only with written approval.</li>
+        <li>Company account only. No personal Pro/Max for work.</li>
+        <li>You own what you merge. Can't explain it? Don't ship it.</li>
+        <li>Read before you install: <code>kb-vet</code>.</li>
+        <li>Never private data + untrusted content + a way out in one session.</li>
+        <li>Must-hold rules go in settings and hooks, not prompts.</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Into Claude? (Visma Group classes)</h2>
+      <table>
+        <tr><td>Public</td><td class="yes">yes</td></tr>
+        <tr><td>Internal (docs, most code)</td><td class="yes">yes, minimised</td></tr>
+        <tr><td>Restricted</td><td class="no">only with prior written approval</td></tr>
+        <tr><td>Customer-owned (payroll, accounting…)</td><td class="no">never</td></tr>
+        <tr><td>Personal data</td><td>one-off, minimised; recurring → DPM</td></tr>
+        <tr><td>Health, sick leave, union (Art. 9)</td><td class="no">never</td></tr>
+      </table>
+      <p style="margin-top:1mm;color:var(--muted);font-size:8.2pt">Your company's own scheme wins if stricter. Never rank, score or monitor people.</p>
+    </section>
+
+    <section>
+      <h2>Ten tips</h2>
+      <ol>
+        <li><code>/context</code> once per repo: see what you pay for.</li>
+        <li><code>/clear</code> between tasks; after two failed fixes, clear and re-ask.</li>
+        <li>Give it a check to run: tests, a script, a URL.</li>
+        <li>Shift+Tab plan mode for anything multi-file.</li>
+        <li>Write only what the agent would get wrong.</li>
+        <li><code>@import</code> loads at launch; it saves nothing.</li>
+        <li>Second time you explain it → make it a skill.</li>
+        <li>A fresh-eyes reviewer catches what the author rationalised.</li>
+        <li>Don't switch model mid-task: cold cache.</li>
+        <li>Headless: <code>claude -p --bare --max-turns N</code>, cost in JSON.</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>If something goes wrong</h2>
+      <ul>
+        <li><b>Secret leaked:</b> rotate now, then tell security. Deleting the commit isn't enough.</li>
+        <li><b>Banned data went in:</b> stop, <b>keep</b> the conversation, report the same day to your DPM or security. Personal data → <code>security@visma.com</code>.</li>
+        <li><b>Agent did something odd:</b> Esc Esc to rewind; add a line to <code>learnings.md</code> and a check to the guard.</li>
+      </ul>
+    </section>
+  </div>
+
+  <footer>Spark AI Upskilling · L3→L4 Tech · 8 Oct 2026 · Bogdan Cojocariu &amp; Cosmin Radoi. Full rules: <code>3-toolbox/safety.md</code> · 32 tips: <code>3-toolbox/tips.md</code></footer>
+</main>
+</body>
+</html>

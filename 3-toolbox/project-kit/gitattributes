@@ -1,0 +1,8 @@
+# Hooks and scripts must keep LF line endings, even on Windows checkouts,
+# or `sh` fails on the carriage returns and the guards silently stop running.
+* text=auto
+*.sh text eol=lf
+*.py text eol=lf
+py text eol=lf
+*.json text eol=lf
+*.md text eol=lf

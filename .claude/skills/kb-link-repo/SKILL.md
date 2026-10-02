@@ -23,7 +23,8 @@ You need the repo path and the workbench path. Ask for whichever is missing.
    leave a one-line pointer behind.
 4. **`CLAUDE.md`:** `@AGENTS.md` plus the compaction line. **`CLAUDE.local.md`:** the import of
    `2-work/<name>/state.md` with the real workbench path. Make sure `CLAUDE.local.md` is in `.gitignore`.
-5. **Guard rails:** copy `.claude/hooks/guard.py`, `prompt_guard.py` and `rules/tests.md`. Merge
+5. **Guard rails:** copy `.claude/hooks/guard.py`, `prompt_guard.py`, `py` and `rules/tests.md`; merge
+   `gitattributes` into the repo's `.gitattributes` (hooks must stay LF on Windows). Merge
    `.claude/settings.json` (union of lists, keep existing hooks). Offer `pre-commit-config.yaml`.
 6. **MCP (optional):** ask which live systems the work needs. Propose a pinned, read-only `.mcp.json`
    and run `kb-vet` on each server. Skip if none.
