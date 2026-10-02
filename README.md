@@ -1,10 +1,32 @@
 # Workbench
 
-**A private knowledge base for your AI agents.** They start every session already knowing
+**A private, organised workplace for your AI agents.** They start every session already knowing
 who you are, what you're working on, what was decided and what went wrong last time,
 without spending tokens exploring. Safe defaults included.
 
 > Same models for everyone. Nobody else has your context. This is where it lives.
+
+## The seven drawers
+
+Everything an agent needs, in one organised place. Each drawer answers one question the agent
+would otherwise guess at, or spend tokens finding out:
+
+| # | Drawer | The agent needs to know… | Lives in | Costs |
+|---|--------|--------------------------|----------|-------|
+| 1 | **Identity** | who it works for, and how they decide | `1-me/profile.md`, `how-i-work.md` | every session (keep it short) |
+| 2 | **Memory** | where things stand, what happened, what went wrong | `NOW.md`, `2-work/<item>/state.md` + `log.md`, `1-me/learnings.md` | two small pages, then on demand |
+| 3 | **Rules** | how work is done in *this* repo | the repo's `AGENTS.md`; `.claude/rules/*.md` with `paths:` | every session there; scoped rules only when relevant |
+| 4 | **Skills** | the procedures it can run | `.claude/skills/` (KB, repo, or `~/.claude/skills/`) | ~50 tokens each until used |
+| 5 | **Reach** | which live systems it may touch, and how | MCP servers per repo, or a CLI; the register in `3-toolbox/mcp.md` | its tool names, every session |
+| 6 | **Guards** | what it must never do | permissions, hooks, sandbox; the rules in `3-toolbox/safety.md` | zero: they run outside the model |
+| 7 | **Checks** | whether its work is actually good | tests it can't edit, golden tasks (`.claude/golden/`), a fresh-eyes `reviewer` agent | only when you run them |
+
+Around them: **the loop** (`kb-capture` after work, `kb-tidy` weekly) keeps the drawers true, and
+**the toolbox** (`3-toolbox/`) is the shareable part: what you hand a colleague.
+
+`python3 0-meta/scripts/kb_check.py --report` shows which drawers your agents have, and what to do about the empty ones.
+
+Claude's own auto-memory is a separate, private notebook it keeps for itself. It is useful, but it isn't a drawer you curate.
 
 ## Why it is built like this
 
@@ -68,20 +90,8 @@ inbox/          drop raw material here; gitignored, untrusted, filed by kb-intak
 | `kb-tidy` | Weekly, or when the session-start check complains |
 | `kb-vet` | Before installing any skill, plugin, hook or MCP server |
 
-## Where does a thing go?
-
-| It is… | Put it in | Costs |
-|--------|-----------|-------|
-| How agents work in **one repo** (commands, proof, conventions, boundaries) | that repo's `AGENTS.md` | every session there |
-| Guidance for **one part** of a repo (tests, API layer) | `.claude/rules/x.md` with `paths:` | only when those files are read |
-| Where a piece of work **stands** | `2-work/<item>/state.md` | when that item is touched |
-| What **happened**, in order | `2-work/<item>/log.md` | on demand |
-| **Why** something was decided | `2-work/<item>/decisions/` | on demand |
-| A **procedure** you repeat | a skill | ~50 tokens until used |
-| Something that must **always / never** happen | a hook or a permission rule | zero; runs outside the model |
-| Access to a **live system** | an MCP server (or a CLI) | its tool names, every session |
-| How **you** like to work | `1-me/profile.md` | every session |
-| Claude's own notes to itself | its auto-memory, not here | first 200 lines |
+In each linked repo you also get a **`reviewer`** agent ("review this") and a **golden-tasks runner**
+(`python3 .claude/golden/run.py`): drawer 7.
 
 ## Safety, in one breath
 
@@ -94,7 +104,8 @@ and a way out in one session. The full page is [`3-toolbox/safety.md`](3-toolbox
 `python3 0-meta/scripts/kb_check.py` reports boot cost, broken links, stale or oversized pages,
 missing indexes, likely secrets and hidden Unicode. It runs at every session start and prints only problems.
 
-## Credits
+## Where it came from
 
-Slimmed and reworked from ABQ Institute's [FACE](https://abq.institute/face) / EACF knowledge-base
-templates. See [ADR-001](0-meta/decisions/adr-001-personal-workbench.md) for what was kept, cut and added.
+It started as a much heavier, company-wide knowledge-base idea. We kept what worked and slimmed
+it down to what one person and their agents actually need. [ADR-001](0-meta/decisions/adr-001-personal-workbench.md)
+has what was kept, cut and added.

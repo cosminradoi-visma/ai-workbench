@@ -56,6 +56,6 @@ These are internal documents: cite them by name, don't copy them into public pla
 
 ## Not adopted, and why
 
-- **Remote skill bundles** (FACE fetches its skills from a URL each session): convenient, but the instructions could change under you.
+- **Remote skill bundles** (some templates fetch their skills from a URL each session): convenient, but the instructions could change under you.
 - **Load-everything memory banks** (Cline): every file every session.
 - **Spec-driven toolchains** (spec-kit, BMAD): good for features, heavier than a personal KB needs. They pair well with it.

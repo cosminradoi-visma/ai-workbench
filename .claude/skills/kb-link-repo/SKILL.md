@@ -1,6 +1,6 @@
 ---
 name: kb-link-repo
-description: Connects a code repo to its workbench work item. Writes the repo's AGENTS.md, CLAUDE.md and CLAUDE.local.md from its real build files, adds the guard hooks and settings, and creates the work item if needed. Use when asked to "link this repo" or "set this repo up for agents".
+description: Connects a code repo to its workbench item. Writes AGENTS.md, CLAUDE.md and CLAUDE.local.md from the real build files, adds guards, a reviewer agent and golden tasks. Use when asked to "link this repo" or "set this repo up for agents".
 disable-model-invocation: true
 ---
 
@@ -26,11 +26,15 @@ You need the repo path and the workbench path. Ask for whichever is missing.
 5. **Guard rails:** copy `.claude/hooks/guard.py`, `prompt_guard.py`, `py` and `rules/tests.md`; merge
    `gitattributes` into the repo's `.gitattributes` (hooks must stay LF on Windows). Merge
    `.claude/settings.json` (union of lists, keep existing hooks). Offer `pre-commit-config.yaml`.
-6. **MCP (optional):** ask which live systems the work needs. Propose a pinned, read-only `.mcp.json`
+6. **Checks (drawer 7):** copy `.claude/agents/reviewer.md` and `.claude/golden/` (runner, README, example).
+   Offer to draft **three golden tasks** from recently fixed bugs (`git log --oneline -30`): each a small real job
+   with a `check:` command that fails before the fix and passes after, and `protect:` on the tests. Don't run
+   them without asking; they cost tokens. Make sure the card has a `- Repo: \`<path>\`` line so `--report` sees the repo.
+7. **MCP (optional):** ask which live systems the work needs. Propose a pinned, read-only `.mcp.json`
    and run `kb-vet` on each server. Skip if none.
-7. **Prove it:** run `claude -p "What are the test and run commands here, and what's the next step on this item?" --max-turns 3`
+8. **Prove it:** run `claude -p "What are the test and run commands here, and what's the next step on this item?" --max-turns 3`
    in the repo, or ask the user to open a fresh session and ask it. It should answer without exploring.
-8. Tell the user what to commit (AGENTS.md, CLAUDE.md, .claude/) and what stays local (CLAUDE.local.md).
+9. Tell the user what to commit (AGENTS.md, CLAUDE.md, .claude/) and what stays local (CLAUDE.local.md).
 
 ## Don't
 

@@ -52,7 +52,8 @@ Explain in two lines what `3-toolbox/personal-kit/` does, then offer each piece:
 ## 6. Check
 
 Run `python3 0-meta/scripts/kb_check.py` (or `python`) and fix what it reports. Note the boot
-cost it prints. That number is the point of the whole exercise.
+cost it prints. That number is the point of the whole exercise. Then run it with `--report` and show
+the seven-drawer score: drawers 1–2 should now be filled; the rest come with `/kb-link-repo`.
 
 ## Done when
 

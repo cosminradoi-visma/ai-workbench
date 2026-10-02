@@ -21,7 +21,8 @@ A weekly ten minutes keeps the KB worth reading.
 4. Prune: learnings no longer true, finished items (set `status: done` and drop them from
    `NOW.md`), `inbox/` leftovers.
 5. Look for two pages saying the same thing. Keep one; link from the other.
-6. Run the check again and report what is left.
+6. Run the check again and report what is left. Finish with `kb_check.py --report`: name the emptiest
+   drawer and the one step that would fill it.
 
 ## Don't
 

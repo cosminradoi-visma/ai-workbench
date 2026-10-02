@@ -69,16 +69,17 @@
     </section>
 
     <section>
-      <h2>Where does it go?</h2>
+      <h2>The seven drawers</h2>
       <table>
-        <tr><td>How agents work in one repo</td><td>repo <code>AGENTS.md</code></td></tr>
-        <tr><td>One part of a repo</td><td><code>.claude/rules/*.md</code> + <code>paths:</code></td></tr>
-        <tr><td>Where work stands / what happened</td><td><code>state.md</code> / <code>log.md</code></td></tr>
-        <tr><td>Why it was decided</td><td><code>decisions/adr-NNN</code></td></tr>
-        <tr><td>A procedure you repeat</td><td>a skill</td></tr>
-        <tr><td>Must always / never happen</td><td>a hook or a deny rule</td></tr>
-        <tr><td>A live system</td><td>MCP (or a CLI)</td></tr>
+        <tr><td><b>1 Identity</b></td><td><code>1-me/profile.md</code>, <code>how-i-work.md</code></td></tr>
+        <tr><td><b>2 Memory</b></td><td><code>NOW.md</code>, <code>state.md</code> + <code>log.md</code>, learnings</td></tr>
+        <tr><td><b>3 Rules</b></td><td>repo <code>AGENTS.md</code>, <code>.claude/rules/</code></td></tr>
+        <tr><td><b>4 Skills</b></td><td><code>.claude/skills/</code></td></tr>
+        <tr><td><b>5 Reach</b></td><td>MCP per repo, or a CLI</td></tr>
+        <tr><td><b>6 Guards</b></td><td>permissions, hooks, sandbox</td></tr>
+        <tr><td><b>7 Checks</b></td><td>tests, <code>.claude/golden/</code>, <code>reviewer</code></td></tr>
       </table>
+      <p style="margin-top:1mm;color:var(--muted);font-size:8.2pt">Your score: <code>kb_check.py --report</code></p>
     </section>
 
     <section>
@@ -118,7 +119,7 @@
         <li>Second time you explain it → make it a skill.</li>
         <li>A fresh-eyes reviewer catches what the author rationalised.</li>
         <li>Don't switch model mid-task: cold cache.</li>
-        <li>Headless: <code>claude -p --bare --max-turns N</code>, cost in JSON.</li>
+        <li>Golden tasks: <code>python3 .claude/golden/run.py</code> → passes and cost.</li>
       </ol>
     </section>
 

@@ -3,6 +3,7 @@
 
     python3 0-meta/scripts/kb_check.py           full report
     python3 0-meta/scripts/kb_check.py --brief   problems only, max 8 lines (the session-start hook)
+    python3 0-meta/scripts/kb_check.py --report  the seven drawers: what your agents have, and what is missing
 
 Checks
   boot      tokens loaded before your first message (this KB, and ~/.claude/CLAUDE.md everywhere)
@@ -89,7 +90,76 @@ def tracked_files():
             yield p
 
 
+def fresh(page, days):
+    m = page.exists() and re.search(r"(?m)^updated:\s*(\d{4}-\d{2}-\d{2})", read(page))
+    return bool(m) and (dt.date.today() - dt.date.fromisoformat(m.group(1))).days <= days
+
+
+def linked_repos():
+    """Repo paths named in work-item cards ('- Repo: `path`'), that exist on this machine."""
+    repos = []
+    for card in sorted((ROOT / "2-work").glob("*/README.md")):
+        if card.parent.name.startswith("_"):
+            continue
+        m = re.search(r"(?m)^- Repo:\s*`?([^`\s]+)`?", read(card))
+        if m:
+            path = pathlib.Path(m.group(1)).expanduser()
+            if path.is_dir():
+                repos.append(path)
+    return repos
+
+
+def report(cfg):
+    """The seven drawers: what an agent needs, and whether yours has it yet."""
+    days = int(cfg["stale_days"])
+    repos = linked_repos()
+    user = HOME / ".claude"
+    rows = []
+
+    profile = ROOT / "1-me" / "profile.md"
+    filled = [l for l in read(profile).splitlines() if l.startswith("- ") and "<!--" not in l] if profile.exists() else []
+    rows.append(("Identity", len(filled) >= 3, f"profile.md: {len(filled)} lines filled in", "/kb-setup"))
+
+    items = [p for p in (ROOT / "2-work").glob("*/state.md") if not p.parent.name.startswith("_")]
+    current = [p for p in items if fresh(p, days)]
+    ok = fresh(ROOT / "NOW.md", days) and bool(current)
+    rows.append(("Memory", ok, f"NOW.md {'current' if fresh(ROOT / 'NOW.md', days) else 'stale or undated'} · {len(current)}/{len(items)} items current", "kb-capture"))
+
+    ruled = [r for r in repos if (r / "AGENTS.md").exists() or (r / "CLAUDE.md").exists()]
+    rows.append(("Rules", bool(ruled), f"{len(ruled)} linked repo(s) with AGENTS.md", "/kb-link-repo"))
+
+    own = {p.parent.name for base in [user / "skills", *[r / ".claude" / "skills" for r in repos]]
+           for p in base.glob("*/SKILL.md") if not p.parent.name.startswith("kb-")}
+    rows.append(("Skills", bool(own), f"{len(own)} of your own (plus the kb-* skills)", "0-meta/templates/skill/"))
+
+    mcp = ROOT / "3-toolbox" / "mcp.md"
+    reg = [l for l in read(mcp).split("## Register")[-1].split("##")[0].splitlines()
+           if l.startswith("| ") and "<!--" not in l and not l.startswith("| Server") and "---" not in l] if mcp.exists() else []
+    wired = [r for r in repos if (r / ".mcp.json").exists()]
+    rows.append(("Reach", bool(reg or wired), f"{len(reg)} server(s) in mcp.md · {len(wired)} repo(s) with .mcp.json", "3-toolbox/mcp.md"))
+
+    settings = user / "settings.json"
+    personal = settings.exists() and "disableBypassPermissionsMode" in read(settings)
+    guarded = [r for r in repos if (r / ".claude" / "hooks" / "guard.py").exists()]
+    rows.append(("Guards", personal and bool(guarded), f"personal kit {'on' if personal else 'off'} · {len(guarded)} repo(s) guarded", "/kb-link-repo + personal kit"))
+
+    golden = [p for r in repos for p in (r / ".claude" / "golden").glob("*.md") if p.stem not in ("README", "example")]
+    reviewer = [r for r in repos if (r / ".claude" / "agents" / "reviewer.md").exists()]
+    rows.append(("Checks", bool(golden or reviewer), f"{len(golden)} golden task(s) · reviewer in {len(reviewer)} repo(s)", ".claude/golden/ + reviewer agent"))
+
+    score = sum(ok for _, ok, _, _ in rows)
+    print(f"Your workbench: {score}/7 drawers\n")
+    for n, (name, ok, detail, fix) in enumerate(rows, 1):
+        hint = "" if ok else f"  → {fix}"
+        print(f"  {'✓' if ok else '·'} {n} {name:<9} {detail}{hint}")
+    if not repos:
+        print("\n  No linked repo found yet: add '- Repo: `path`' to a work item card, or run /kb-link-repo.")
+    return 0
+
+
 def main():
+    if "--report" in sys.argv:
+        return report(config())
     brief = "--brief" in sys.argv
     cfg = config()
     errors, warnings, info = [], [], []

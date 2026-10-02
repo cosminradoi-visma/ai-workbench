@@ -1,15 +1,15 @@
 # ADR-001: A personal workbench with a short, budgeted read path
 
 **Date:** 2026-10-02 · **Status:** Proposed · **Decided by:** Cosmin Radoi
-**Source:** the L3→L4 workshop prep; ABQ's EACF company template (MXP-KB copy) and FACE personal template; [`research.md`](research.md)
+**Source:** the L3→L4 workshop prep; the company knowledge-base template we started from, and a personal variant of it; [`research.md`](research.md)
 
 ## Context
 
-The EACF company template is built for an organisation: owner matrices, PR approval
+The company template we started from is built for an organisation: owner matrices, PR approval
 per layer, GitBook, Confluence and Notion adapters, five company layers. Used as it is,
 `CLAUDE.md` imports a 29 KB boot file, about 7,400 tokens loaded before the first
-question. Most of it covers platforms and approval flows one person never uses. The
-FACE personal template is lighter but fetches its skills from a remote URL at runtime,
+question. Most of it covers platforms and approval flows one person never uses. Its
+personal variant is lighter but fetches its skills from a remote URL at runtime,
 which adds a network dependency and a trust boundary. Colleagues at Visma need their
 own context, kept safely and cheaply.
 
@@ -31,11 +31,11 @@ code repo to its work item, and a personal kit sets safe defaults in `~/.claude/
 - The dominant failure mode of agent context is **staleness**: half of AGENTS.md files
   are never updated. A capture habit and a check that flags stale pages matter more than structure.
 
-## Kept from EACF / FACE
+## Kept from the original
 
 The KB beats guesses · README index in every folder · ADRs with Proposed-until-ratified ·
 `[unverified]` marking · the audit page · one instruction source for all tools (`AGENTS.md`) ·
-the private-vs-shareable split (FACE's personal/professional domains).
+the private-vs-shareable split (personal vs professional domains).
 
 ## Cut, and why
 
@@ -47,7 +47,7 @@ the private-vs-shareable split (FACE's personal/professional domains).
 | Separate products / projects / departments / agents layers | One `2-work/` shape with `kind:` |
 | Owner matrix, PR approval, notifications | One owner; git history is the audit trail |
 | MCP/Confluence adapter, GitBook `SUMMARY.md` | Unused; `SUMMARY.md` had drifted from the real file names |
-| Remote skill bundle fetched at runtime (FACE) | Supply-chain risk; skills are vendored and read before use |
+| Remote skill bundle fetched at runtime | Supply-chain risk; skills are vendored and read before use |
 | `section.page` titles and numeric file prefixes below top level | Renames and broken links whenever order changes |
 | Five per-tool pointer files | Copilot, Cursor, Codex and Claude Code read `AGENTS.md` |
 

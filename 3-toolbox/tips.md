@@ -69,10 +69,10 @@ equivalents for other tools are at the end.
 
 ## Is it any good, and is it worth it?
 
-26. **Keep five golden tasks per repo:** real, small, with a known right answer. Run them headless
-    after you change CLAUDE.md, a skill or the model, and count passes. That's your eval.
-27. **Judge with something the agent can't edit:** tests it didn't write, a reviewer subagent with
-    fresh context, a human reading the diff. "The agent says the tests pass" is not evidence.
+26. **Keep three to five golden tasks per repo:** real, small, with a known right answer. `python3 .claude/golden/run.py`
+    runs each in a clean worktree after you change CLAUDE.md, a skill or the model, and counts passes and cost. That's your eval.
+27. **Judge with something the agent can't edit:** tests it didn't write (`protect:` in a golden task), the `reviewer`
+    agent with fresh context, a human reading the diff. "The agent says the tests pass" is not evidence.
 28. **Know the cost per task:** `/usage` in a session, `total_cost_usd` in headless JSON. If a task
     costs more than doing it yourself and isn't getting cheaper, stop delegating it.
 29. **Not worth it when:** the task is a one-liner you'd type faster, the spec is in your head and nowhere

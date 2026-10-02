@@ -13,6 +13,8 @@ copies them and fills in the blanks from the repo's real build files. It merges 
 | `.claude/hooks/prompt_guard.py` | repo | yes | Stops pasted tokens, keys and real IBANs before they reach the model |
 | `.claude/hooks/py` | repo | yes | Runs the hooks with the first *working* Python 3 (skips Windows' fake `python3`) |
 | `gitattributes` | repo root as `.gitattributes` (merge) | yes | Keeps hooks LF on Windows checkouts, or they silently stop running |
+| `.claude/agents/reviewer.md` | repo | yes | A fresh-eyes, read-only reviewer: "review this" → PASS / CHANGES NEEDED with file:line |
+| `.claude/golden/` | repo | yes | Golden tasks + `run.py`: clean worktree per task, headless run, a check it can't influence, pass count and cost |
 | `.claude/rules/tests.md` | repo | yes | Example path-scoped rule: loads only when test files are read |
 | `mcp.json.example` | repo root as `.mcp.json` | yes | Per-repo MCP servers, pinned and read-only first |
 | `pre-commit-config.yaml` | repo root as `.pre-commit-config.yaml` | yes | gitleaks secret scan on every commit |
