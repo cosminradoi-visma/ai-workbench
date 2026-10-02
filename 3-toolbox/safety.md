@@ -29,7 +29,7 @@ Short version first; the reasons follow.
 
 Visma Group classifies information in four classes (**IS-010 Information Classification and
 Handling**): Public · Internal · Restricted · Customer-owned. Your company may implement it
-with a **stricter local scheme**. Visma Solutions, for example, splits it into ten codes and
+with a **stricter local scheme**. Visma Solutions, for example, splits it into ten categories coded A to E and
 publishes a "Using Claude with company data" guide. **Find your company's version and follow
 it; it wins over this table.** Ask your security/privacy team when in doubt, and apply the stricter class.
 
@@ -38,7 +38,7 @@ it; it wins over this table.** Ask your security/privacy team when in doubt, and
 | Public | Open-source code, public docs, press releases | Yes |
 | Internal | Internal docs, guidelines, most source code and designs, meeting notes | Yes, minimised: only what the task needs |
 | Restricted | M&A, restructuring, unreleased financials, security findings (in some schemes) | **No**, unless you hold prior written approval |
-| Customer-owned | Anything customers hold in our products: payroll, accounting, HR records, support extracts | **Never.** There is nothing to apply for |
+| Customer-owned | Anything customers hold in our products: payroll, accounting, HR records, support extracts | **No, by default.** The Group guideline allows it only where the customer contract permits; many companies (Visma Solutions, for one) ban it outright. Treat it as never unless you have both in writing |
 | Personal data | Colleagues, contacts, candidates | Only one-off and minimised (roles, not names). Recurring or automated use needs your DPM |
 | Sensitive personal data | Health, sick leave, union membership (GDPR Art. 9) | **Never** |
 
