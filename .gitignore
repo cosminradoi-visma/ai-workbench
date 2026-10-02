@@ -1,0 +1,19 @@
+# Personal, never committed
+.claude/settings.local.json
+CLAUDE.local.md
+*.local.md
+
+# Raw material waiting to be filed: may contain anything, so it never leaves the machine
+inbox/*
+!inbox/README.md
+
+# Secrets, in case one lands here by accident
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Tooling
+__pycache__/
+.DS_Store
