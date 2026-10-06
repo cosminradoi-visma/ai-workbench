@@ -56,13 +56,37 @@ rc=$?
 check "settings changed after arming: refuses until install.sh runs again" test "$rc" -eq 3 -a ! -d "$RX/state/claims/q4"
 arm
 
+echo "MAX_WORKERS"
+echo 'MAX_WORKERS=1' >>"$OWNER_ENV"
+mkdir -p "$RX/state/workers/1"; echo $$ >"$RX/state/workers/1/pid"   # a live worker holds the only slot
+cp "$KIT/tests/fixtures/inbox/fahrenheit-question.md" "$RX/inbox/b1.md"
+before=$(calls)
+tick
+check "all slots busy: nothing claimed, the message waits" test ! -d "$RX/state/claims/b1" -a "$(calls)" -eq "$before"
+check "all slots busy: says so" grep -q "workers busy" "$SB/tick.out"
+sh -c 'exit 0' & dead=$!; wait "$dead"; echo "$dead" >"$RX/state/workers/1/pid"   # that worker died
+tick
+check "a dead worker's slot is freed and reused" test -d "$RX/state/claims/b1"
+check "a foreground worker frees its slot afterwards" test ! -d "$RX/state/workers/1"
+STUB2=$SB/slow-stub.sh
+printf '#!/bin/sh\necho "$1" >>"%s/work-calls.log"\nsleep 2\n' "$SB" >"$STUB2"; chmod +x "$STUB2"
+for i in 1 2 3; do cp "$KIT/tests/fixtures/inbox/fahrenheit-question.md" "$RX/inbox/burst$i.md"; done
+WORK_CMD=$STUB2 "$KIT/watch.sh" >"$SB/tick.out" 2>&1   # background workers
+check "a burst of 3 with MAX_WORKERS=1: one background worker started" test "$(ls -d "$RX"/state/claims/burst* 2>/dev/null | wc -l | tr -d ' ')" -eq 1
+sleep 3
+WORK_CMD=$STUB2 "$KIT/watch.sh" >"$SB/tick.out" 2>&1
+check "after it ends, the next tick starts the next one" test "$(ls -d "$RX"/state/claims/burst* 2>/dev/null | wc -l | tr -d ' ')" -eq 2
+sleep 3
+WORK_CMD=$STUB2 "$KIT/watch.sh" --wait >/dev/null 2>&1
+sed -i.bak '/^MAX_WORKERS=1$/d' "$OWNER_ENV"; echo 'MAX_WORKERS=10' >>"$OWNER_ENV"
+
 echo "claims under concurrency"
 rm -f "$SB/work-calls.log"
 for i in 1 2 3 4 5 6; do cp "$KIT/tests/fixtures/inbox/fahrenheit-question.md" "$RX/inbox/c$i.md"; done
 for i in 1 2 3 4 5; do "$KIT/watch.sh" --wait >/dev/null 2>&1 & done
 wait
 dupes=$(sort "$SB/work-calls.log" | uniq -d | wc -l | tr -d ' ')
-check "5 parallel ticks, 7 new messages (q4 + c1..c6): each worked exactly once" test "$(calls)" -eq 7 -a "$dupes" -eq 0
+check "5 parallel ticks, 6 new messages (c1..c6): each worked exactly once" test "$(calls)" -eq 6 -a "$dupes" -eq 0
 
 rm -rf "$SB"
 summary

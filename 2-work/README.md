@@ -1,4 +1,4 @@
-# 2-work — products, projects and repos (private)
+# 2-work: products, projects and repos (private)
 
 One folder per thing you work on. Start one with `kb-setup`, `kb-link-repo`, or by
 copying `0-meta/templates/work-item/`.

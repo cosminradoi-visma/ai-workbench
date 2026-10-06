@@ -3,8 +3,10 @@
 # actually returned instead of trusting what the model says it saw.
 #   watch phase: append to state/witness/<tick>.txt (watch.sh greps hit ts values in it)
 #   act phase:   reactions responses go to state/claims/<id>/reactions.txt + reactions.at (for the 🔕 check)
+# Without jq nothing is recorded, so the scripts see "no witness" and treat the tick or the post as failed.
 . "$(dirname "$0")/lib.sh"
 [ -n "$PHASE" ] || exit 0
+need_jq
 DIR=${RECEPTION_DIR:-$KIT}
 raw=$(printf '%s' "$IN" | jq -r '.tool_response | if type == "string" then . else tojson end')
 if [ "$PHASE" = watch ]; then

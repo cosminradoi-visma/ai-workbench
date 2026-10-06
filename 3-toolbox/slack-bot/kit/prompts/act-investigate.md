@@ -1,5 +1,6 @@
-Route: investigate. You may read, run tests, run `scripts/smoke.sh` and read the live logs named in the triage prompt.
-You may not edit files. Do not start servers.
+Route: investigate. You may read, run the repo's tests (the test command on `tests/...`), run `scripts/status.sh` and
+`scripts/smoke.sh`, and read the live logs named in the triage prompt with the Read tool.
+You may not edit files. Do not start servers. Use relative paths only: absolute paths, `~` and `..` are denied.
 
 Write the reply in this shape:
 **Likely cause:** one or two lines, with `path:line` if you have one.

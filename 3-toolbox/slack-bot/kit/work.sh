@@ -1,10 +1,16 @@
 #!/bin/sh
 # Work one claimed message. Usage: work.sh <claim-id>   (watch.sh calls it after the atomic claim)
 #
-# Two runs, one session (--session-id is pre-assigned, so the PR footer knows it before the PR exists):
-#   1. triage  claude -p --session-id $SID   read-only tools, router schema (schema/route.json)
+# Two runs (--session-id is pre-assigned, so the PR footer knows it before the PR exists):
+#   1. triage  claude -p --session-id $SID   read-only tools (no tests, no writes), router schema (schema/route.json)
 #   2. act     claude -p --resume $SID       ONLY the chosen route's tools, verdict schema
-# Both runs happen in a throwaway git worktree of TARGET_REPO (<repo>/.worktrees/<id>), so the
+#      fix_pr runs in a FRESH session instead (--session-id $FIX_SID): it never sees the workbench drawers or the
+#      thread memory, only the task, the route and triage's short task summary. It has no web tools.
+# Every run: --setting-sources project + --settings bot-settings.json (install.sh), so the owner's personal rules
+# and hooks never apply, the workbench and ~/.ssh etc. are denied, and the STOP hook can end it mid-run.
+# Cost: a resumed run reports the session's whole total, so the script charges per-run deltas against
+# WORK_BUDGET_USD (this message) and THREAD_BUDGET_USD (the whole thread), post and reaction runs included.
+# All runs happen in a throwaway git worktree of TARGET_REPO (<repo>/.worktrees/<id>), so the
 # owner's checkout is never touched. The script, not the model, then:
 #   - validates the route (answer must cite a file that exists; fix_pr needs ALLOW_PR=true and a failing_test)
 #   - fix_pr: commits on agent/<id>, caps the diff (200 lines / 5 files), runs the test red on base and
@@ -42,10 +48,13 @@ if [ -z "$SID" ] && [ "$CLAIM_SOURCE" = slack ] && [ -s "$TDIR/session" ]; then 
 printf '%s\n' "$SID" >"$C/session"
 RECEPTION_CLAIM=$ID
 export RECEPTION_CLAIM
-SETTINGS=$TARGET_REPO/.claude/settings.json
+[ -f "$BOT_SETTINGS" ] || { say "work $ID: no $BOT_SETTINGS. Run install.sh"; exit 2; }
 HOST=$(hostname -s 2>/dev/null || hostname)
 COST_TRIAGE=0
-COST_TOTAL=0
+COST_TOTAL=0      # this message: every run, including post and reaction runs
+mkdir -p "$STATE/sessions"
+THREAD_SPENT=$(cat "$TDIR/spent" 2>/dev/null || echo 0)
+FIX_SID=""
 ROUTE_TRIAGE=none
 ROUTE=none
 VERDICT=none
@@ -77,9 +86,10 @@ finish() {
   _mins=$(awk -v s="$(($(epoch) - T0))" 'BEGIN { printf "%.1f", s / 60 }')
   jq -nc --arg id "$ID" --arg sid "$SID" --arg src "$CLAIM_SOURCE" --arg rt "$ROUTE_TRIAGE" --arg r "$ROUTE" \
     --arg v "$VERDICT" --arg st "$_status" --arg ct "$COST_TRIAGE" --arg c "$COST_TOTAL" --arg m "$_mins" \
-    --arg pr "$PR_REF" --arg n "$NOTES" --arg ts "$(now)" \
-    '{ts: $ts, id: $id, session: $sid, source: $src, route_triage: $rt, route: $r, verdict: $v, status: $st,
-      cost_triage: ($ct | tonumber), cost_total: ($c | tonumber), minutes: ($m | tonumber), pr: $pr, notes: $n}' \
+    --arg pr "$PR_REF" --arg n "$NOTES" --arg ts "$(now)" --arg th "$THREAD_SPENT" --arg fs "$FIX_SID" \
+    '{ts: $ts, id: $id, session: $sid, fix_session: (if $fs == "" then null else $fs end), source: $src,
+      route_triage: $rt, route: $r, verdict: $v, status: $st, cost_triage: ($ct | tonumber),
+      cost_total: ($c | tonumber), cost_thread: ($th | tonumber), minutes: ($m | tonumber), pr: $pr, notes: $n}' \
     >>"$LOGDIR/runs.jsonl"
   if [ -n "${MEMORY_FILE:-}" ] && [ "$_status" = sent ]; then
     _summary=$(jq -r '.structured_output.reason // ""' "$C/triage.json" 2>/dev/null)
@@ -91,17 +101,41 @@ finish() {
 }
 
 # Pass TEXT through hooks/slack-guard.sh exactly as a Slack send would. Returns 1 (and logs) on deny.
+# The hook denies with exit 2 and the reason on stderr; anything but exit 0 counts as a deny (fail closed).
 guard() {
   _ev=$(jq -nc --arg tool "$SLACK_SEND_TOOL" --arg ch "${CHANNEL_ID:-}" --arg ts "$THREAD_TS" --arg m "$1" \
     '{hook_event_name: "PreToolUse", tool_name: $tool, tool_input: {channel_id: $ch, thread_ts: $ts, message: $m}}')
-  _out=$(printf '%s' "$_ev" | RECEPTION_PHASE=act RECEPTION_PREFLIGHT=1 "$KIT/hooks/slack-guard.sh")
-  _dec=$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecision // "allow"' 2>/dev/null)
-  if [ "$_dec" = deny ]; then
-    GUARD_REASON=$(printf '%s' "$_out" | jq -r '.hookSpecificOutput.permissionDecisionReason')
-    return 1
-  fi
-  return 0
+  GUARD_REASON=$(printf '%s' "$_ev" | RECEPTION_PHASE=act RECEPTION_PREFLIGHT=1 sh "$KIT/hooks/slack-guard.sh" 2>&1 >/dev/null)
+  _rc=$?
+  [ "$_rc" -eq 0 ] && return 0
+  GUARD_REASON=${GUARD_REASON:-slack-guard exited $_rc}
+  return 1
 }
+
+# ---------- cost ----------
+# charge FILE MODE [SID]: add one run's own cost to this message (COST_TOTAL) and to the thread (THREAD_SPENT).
+#   MODE fresh:  a new or unpersisted session; total_cost_usd is this run's cost.
+#   MODE resume: --resume reports the session's WHOLE total (earlier runs included), so charge only the
+#                delta over the last total seen for that session (state/sessions/<sid>.cost).
+charge() {
+  _r=$(jq -r '.total_cost_usd // 0' "$1" 2>/dev/null)
+  case "$_r" in '' | null) _r=0 ;; esac
+  _d=$_r
+  if [ "$2" = resume ] && [ -n "${3:-}" ]; then
+    _prev=$(cat "$STATE/sessions/$3.cost" 2>/dev/null || echo 0)
+    _d=$(fsub "$_r" "$_prev")
+    fgt "$_r" "$_prev" && printf '%s\n' "$_r" >"$STATE/sessions/$3.cost"
+  elif [ -n "${3:-}" ]; then
+    printf '%s\n' "$_r" >"$STATE/sessions/$3.cost"
+  fi
+  COST_TOTAL=$(fadd "$COST_TOTAL" "$_d")
+  THREAD_SPENT=$(fadd "$THREAD_SPENT" "$_d")
+  printf '%s\n' "$THREAD_SPENT" >"$TDIR/spent"
+  LAST_CHARGE=$_d
+}
+fmin() { awk -v a="${1:-0}" -v b="${2:-0}" 'BEGIN { printf "%.4f", (a < b ? a : b) }'; }
+# left: what the next run may spend: the message budget and the thread budget, whichever is smaller.
+left() { fmin "$(fsub "$WORK_BUDGET_USD" "$COST_TOTAL")" "$(fsub "$THREAD_BUDGET_USD" "$THREAD_SPENT")"; }
 
 # Deliver a signed message: inbox lane -> outbox file; slack lane -> a tiny Haiku post run.  # [T] slack
 deliver() {
@@ -146,11 +180,11 @@ deliver() {
   _sends_before=$(grep -c "$SLACK_SEND_TOOL" "$C/witness.log" 2>/dev/null)
   _post=$(render "$KIT/prompts/post.md" OWNER_NAME "$OWNER_NAME" CHANNEL_ID "$CHANNEL_ID" TS "$THREAD_TS" MUTE "$MUTE" TEXT "$_text" \
     SEND_TOOL "$SLACK_SEND_TOOL" REACTIONS_TOOL "$SLACK_REACTIONS_TOOL")
-  (cd "$WT" && RECEPTION_PHASE=act "$CLAUDE_BIN" -p "$_post" --model "$WATCH_MODEL" --tools "" \
+  (cd "$WT" && RECEPTION_PHASE=act "$CLAUDE_BIN" -p "$_post" $BOT_FLAGS --settings "$BOT_SETTINGS" --model "$WATCH_MODEL" --tools "" \
     --allowedTools "$SLACK_REACTIONS_TOOL" "$SLACK_SEND_TOOL" --permission-mode dontAsk --permission-prompts none \
     --max-turns 4 --max-budget-usd "$POST_BUDGET_USD" --no-session-persistence --output-format json --plugin-dir "$KIT" \
     </dev/null >"$C/post-$_file.json" 2>&1)
-  COST_TOTAL=$(fadd "$COST_TOTAL" "$(jq -r '.total_cost_usd // 0' "$C/post-$_file.json" 2>/dev/null)")
+  charge "$C/post-$_file.json" fresh
   rm -f "$C/outgoing.txt"
   if jq -e '[.permission_denials[]?] | length > 0' "$C/post-$_file.json" >/dev/null 2>&1; then
     say "work $ID: post of $_file was denied by a hook, see log/denies.log"
@@ -182,10 +216,11 @@ react() {
   # so the script retries until the witness shows one more reaction, at most 3 tries.
   for _try in 1 2 3; do
     _before=$(grep -c "$SLACK_ADD_REACTION_TOOL" "$C/witness.log" 2>/dev/null)
-    (cd "$WT" && RECEPTION_PHASE=act "$CLAUDE_BIN" -p "$_r" --model "$WATCH_MODEL" --tools "" \
+    (cd "$WT" && RECEPTION_PHASE=act "$CLAUDE_BIN" -p "$_r" $BOT_FLAGS --settings "$BOT_SETTINGS" --model "$WATCH_MODEL" --tools "" \
       --allowedTools "$SLACK_ADD_REACTION_TOOL" --permission-mode dontAsk --permission-prompts none \
       --max-turns 3 --max-budget-usd "$POST_BUDGET_USD" --no-session-persistence --output-format json --plugin-dir "$KIT" \
       </dev/null >"$C/react-$1.json" 2>&1)
+    charge "$C/react-$1.json" fresh   # every try counts against the budget
     if jq -e '[.permission_denials[]?] | length > 0' "$C/react-$1.json" >/dev/null 2>&1; then
       say "work $ID: the :$1: reaction was denied, see log/denies.log"
       return 0
@@ -225,24 +260,32 @@ undash() { sed -e 's/ — /, /g' -e 's/—/-/g' -e 's/–/-/g'; }
 
 # run_claude OUT ARGS... : one headless run inside the worktree, with the common flags.
 # The live service logs live in the owner's checkout (gitignored), so they are added read-only by path.
+# Only the triage run of the Slack MCP lane loads the Slack connector (it reads the thread); every other run
+# gets --strict-mcp-config: no Slack, no other connector.
 run_claude() {
   _o=$1
   shift
-  # No MCP servers for the inbox lane and the app transport: the model has no Slack (or any other connector) tools.
-  { [ "$CLAIM_SOURCE" = inbox ] || [ "$TRANSPORT" = app ]; } && set -- "$@" --strict-mcp-config
+  { [ "$CLAIM_SOURCE" = inbox ] || [ "$TRANSPORT" = app ] || [ "${RECEPTION_PHASE:-}" != triage ]; } && set -- "$@" --strict-mcp-config
   [ -d "$TARGET_REPO/logs" ] && set -- "$@" --add-dir "$TARGET_REPO/logs"
-  [ -f "$SETTINGS" ] && set -- "$@" --settings "$SETTINGS"
-  (cd "$WT" && "$CLAUDE_BIN" -p "$@" --permission-mode dontAsk --permission-prompts none \
+  (cd "$WT" && "$CLAUDE_BIN" -p "$@" $BOT_FLAGS --settings "$BOT_SETTINGS" --permission-mode dontAsk --permission-prompts none \
     --output-format json --plugin-dir "$KIT" </dev/null >"$_o" 2>"$_o.err")
 }
 
-# retry_structured OUT SCHEMA MODEL TOOLS: one short follow-up on the same session when a run ended
-# "success" without structured output (seen with Haiku). Prints the structured output, or nothing.
+# retry_structured OUT SCHEMA MODEL TOOLS SESSION: one short follow-up on the same session when a run ended
+# "success" without structured output (seen with Haiku). Sets RETRY_OUT to the structured output, or "".
+# The retry counts against the budget, and never runs when stopped or out of budget. Not called in a
+# subshell, so its cost reaches COST_TOTAL.
 retry_structured() {
+  RETRY_OUT=""
   [ "$(jq -r '.subtype // ""' "$1" 2>/dev/null)" = success ] || return 0
+  stopped >/dev/null && return 0
+  _cap=$(fmin "$(left)" 0.30)
+  fgt "$_cap" 0.02 || return 0
   run_claude "$1.retry" "You did not return the JSON. Return it now with the structured output tool, nothing else." \
-    --resume "$SID" --model "$3" --tools "$4" --allowedTools "$4" --max-turns 3 --max-budget-usd 0.30 --json-schema "$2"
-  jq -c '.structured_output // empty' "$1.retry" 2>/dev/null
+    --resume "$5" --model "$3" --tools "$4" --allowedTools "$4" --disallowedTools "$NO_WRITE$NO_WEB" \
+    --max-turns 3 --max-budget-usd "$_cap" --json-schema "$2"
+  charge "$1.retry" resume "$5"
+  RETRY_OUT=$(jq -c '.structured_output // empty' "$1.retry" 2>/dev/null)
 }
 
 route_schema() {
@@ -329,6 +372,14 @@ case "$EDITED" in true | yes | 1)
   ;;
 esac
 
+# ---------- per-thread cap ----------
+if ! fgt "$(left)" 0.05; then
+  ROUTE_TRIAGE=none ROUTE=decline VERDICT=declined NOTES="budget spent (thread \$$THREAD_SPENT of \$$THREAD_BUDGET_USD)"
+  say "work $ID: no budget left for this thread (\$$THREAD_SPENT of \$$THREAD_BUDGET_USD), no model run"
+  deliver "$ID.md" "$(sign "This thread has used up its budget, so I stopped here. <@$OWNER_ID>, start a new thread, or raise THREAD_BUDGET_USD.")" && finish sent
+  finish budget
+fi
+
 # ---------- 1. triage ----------
 if _why=$(stopped); then say "work $ID: stopped before triage, $_why"; finish stopped; fi
 RECEPTION_PHASE=triage
@@ -345,29 +396,43 @@ $(tail -20 "$MEMORY_FILE")
 fi
 LOGS_HINT="no live logs found"
 [ -d "$TARGET_REPO/logs" ] && LOGS_HINT="$TARGET_REPO/logs/ (the running service's logs, read-only)"
+WORKBENCH_TEXT=$(workbench_context "$CLAIM_SOURCE")
 TRIAGE_PROMPT=$(render "$KIT/prompts/triage.md" OWNER_NAME "$OWNER_NAME" ID "$ID" MESSAGE "$MSG" \
-  EXTRA_ROUTES "$EXTRA_ROUTES_TEXT" MEMORY "$MEMORY_TEXT" LOGS "$LOGS_HINT" WORKBENCH "$(workbench_context)")
-# One comma-separated argument per list (patterns contain spaces).
-# The repo's own test commands (TEST_CMD / TEST_ALL_CMD in owner.env), so a non-Python repo can be investigated too.
-READ_TESTS="Bash($TEST_CMD *),Bash($TEST_ALL_CMD)"
-READ_BASH='Bash(date),Bash(date *),Bash(git log *),Bash(git show *),Bash(git diff *),Bash(git blame *),Bash(uv run pytest *),Bash(scripts/status.sh),Bash(scripts/smoke.sh),Bash(tail *),Bash(cat logs/*),Bash(cat $TARGET_REPO/logs/*),Bash(ls *)'
-READ_BASH="$READ_BASH,$READ_TESTS"
+  EXTRA_ROUTES "$EXTRA_ROUTES_TEXT" MEMORY "$MEMORY_TEXT" LOGS "$LOGS_HINT" WORKBENCH "$WORKBENCH_TEXT")
+# Tool lists: one comma-separated argument per list (patterns contain spaces).
+# Triage and answer are truly read-only: git history, the source, ls. No tests, no scripts (they execute code),
+# no `git --output` (it writes files; also denied in bot-settings.json), no edits.
+READ_BASH='Bash(git log *),Bash(git show *),Bash(git diff *),Bash(git blame *),Bash(git status),Bash(ls),Bash(ls *),Bash(date)'
+NO_WRITE='Edit,Write,NotebookEdit,WebFetch,Bash(git * --output*),Bash(git *--output=*),Bash(git *--ext-diff*),Bash(git push *),Bash(git commit *),Bash(gh *)'
+NO_ESCAPE='Bash(* /*),Bash(* ~*),Bash(*../*)'   # read-only phases: no absolute paths, no ~, no ..: stay in the worktree
+# The repo's tests (TEST_CMD / TEST_ALL_CMD in owner.env), for investigate (no write tools) and fix_pr. pytest flags
+# that write files, load plugins or move the root are denied.
+RUN_TESTS="Bash($TEST_ALL_CMD),Bash($TEST_CMD tests),Bash($TEST_CMD tests/*)"
+NO_TEST_WRITES='Bash(*pytest*--junit*),Bash(*pytest* -o *),Bash(*pytest*--override-ini*),Bash(*pytest* -p *),Bash(*pytest*--basetemp*),Bash(*pytest*--rootdir*),Bash(*pytest* -c *),Bash(*pytest*--confcutdir*),Bash(*pytest*--debug*),Bash(*pytest*--pastebin*)'
+# No web tools whenever the workbench drawers are in the context (this run or the session it resumes): the
+# private data must have no way out. Without drawers, triage and answer may search the web.
+WEB=""
+[ -n "$WORKBENCH_TEXT" ] && : >"$TDIR/drawers"   # the thread's session has seen the drawers: no web in it, ever
+[ -f "$TDIR/drawers" ] || WEB=WebSearch
+NO_WEB=""
+[ -n "$WEB" ] || NO_WEB=",WebSearch"
 SLACK_READ=""
 [ "$CLAIM_SOURCE" = slack ] && [ "$TRANSPORT" = mcp ] && SLACK_READ=",$SLACK_READ_THREAD_TOOL,$SLACK_REACTIONS_TOOL"
-say "work $ID: triage ($TRIAGE_MODEL) session=$SID"
+say "work $ID: triage ($TRIAGE_MODEL) session=$SID${WORKBENCH_TEXT:+ (with the workbench drawers, no web)}"
 if [ "$RESUMING" = 1 ]; then SESSION_FLAG=--resume; else SESSION_FLAG=--session-id; fi
 run_claude "$C/triage.json" "$TRIAGE_PROMPT" "$SESSION_FLAG" "$SID" --model "$TRIAGE_MODEL" \
-  --tools "Read,Grep,Glob,Bash,WebSearch" --allowedTools "Read,Grep,Glob,WebSearch,$READ_BASH$SLACK_READ" \
-  --disallowedTools "WebFetch" \
-  --max-turns 30 --max-budget-usd "$WORK_BUDGET_USD" --json-schema "$(route_schema)"
-COST_TRIAGE=$(jq -r '.total_cost_usd // 0' "$C/triage.json" 2>/dev/null || echo 0)
+  --tools "Read,Grep,Glob,Bash${WEB:+,$WEB}" --allowedTools "Read,Grep,Glob${WEB:+,$WEB},$READ_BASH$SLACK_READ" \
+  --disallowedTools "$NO_WRITE,$NO_ESCAPE$NO_WEB" \
+  --max-turns 30 --max-budget-usd "$(left)" --json-schema "$(route_schema)"
+if [ "$RESUMING" = 1 ]; then charge "$C/triage.json" resume "$SID"; else charge "$C/triage.json" fresh "$SID"; fi
 [ "$CLAIM_SOURCE" = slack ] && printf '%s\n' "$SID" >"$TDIR/session"   # later 🤖s in this thread continue this session
-COST_TOTAL=$COST_TRIAGE
 R=$(jq -c '.structured_output // empty' "$C/triage.json" 2>/dev/null)
 if [ -z "$R" ]; then
-  R=$(retry_structured "$C/triage.json" "$(route_schema)" "$TRIAGE_MODEL" "Read,Grep,Glob")
-  [ -n "$R" ] && COST_TRIAGE=$(jq -r '.total_cost_usd // 0' "$C/triage.json.retry") && COST_TOTAL=$COST_TRIAGE && say "work $ID: triage needed one retry for its JSON"
+  retry_structured "$C/triage.json" "$(route_schema)" "$TRIAGE_MODEL" "Read,Grep,Glob" "$SID"
+  R=$RETRY_OUT
+  [ -n "$R" ] && say "work $ID: triage needed one retry for its JSON"
 fi
+COST_TRIAGE=$COST_TOTAL
 if [ -z "$R" ]; then
   _sub=$(jq -r '.subtype // "no output"' "$C/triage.json" 2>/dev/null || echo "no output")
   ROUTE_TRIAGE=failed ROUTE=escalate VERDICT=escalated NOTES="triage failed: $_sub"
@@ -410,40 +475,64 @@ say "work $ID: triage said $ROUTE_TRIAGE, acting as $ROUTE${NOTES:+ ($NOTES)} co
 if _why=$(stopped); then say "work $ID: stopped before act, $_why"; finish stopped; fi
 RECEPTION_PHASE=act
 export RECEPTION_PHASE
-REMAINING=$(fsub "$WORK_BUDGET_USD" "$COST_TRIAGE")
+REMAINING=$(left)
 if ! fgt "$REMAINING" 0.05; then NOTES="budget spent in triage"; VERDICT=blocked; finish budget; fi
 BRANCH=agent/$ID
 ACT_PROMPT_FILE=$(prompt_for "$ROUTE")
 [ -n "$ACT_PROMPT_FILE" ] || { NOTES="no act prompt for $ROUTE"; finish error; }
+ACT_SESSION="--resume $SID"
+ACT_SID=$SID
+ACT_MODE=resume
+DISALLOWED="$NO_WRITE,$NO_ESCAPE$NO_WEB"
 case "$ROUTE" in
-  investigate) TOOLS="Read,Grep,Glob,Bash"; ALLOWED="Read,Grep,Glob,$READ_BASH" ;;
+  investigate)   # may run the repo's tests: it has no write tools, no web while drawers are in context
+    TOOLS="Read,Grep,Glob,Bash"
+    ALLOWED="Read,Grep,Glob,$READ_BASH,$RUN_TESTS,Bash(scripts/status.sh),Bash(scripts/smoke.sh)"
+    DISALLOWED="$DISALLOWED,$NO_TEST_WRITES"
+    ;;
   fix_pr)
+    # A FRESH session: it executes code (tests it writes), so it must never have seen the drawers or the memory.
+    FIX_SID=$(new_uuid)
+    printf '%s\n' "$FIX_SID" >"$C/session_fix"
+    ACT_SESSION="--session-id $FIX_SID"
+    ACT_SID=$FIX_SID
+    ACT_MODE=fresh
     git -C "$WT" switch -q -c "$BRANCH" 2>/dev/null || git -C "$WT" switch -q "$BRANCH"
     TOOLS="Read,Grep,Glob,Bash,Edit,Write"
-    ALLOWED="Read,Grep,Glob,Edit,Write,$READ_TESTS,Bash(uv run pytest *),Bash(git log *),Bash(git show *),Bash(git diff *),Bash(git status *),Bash(git bisect *),Bash(ls *)"
+    ALLOWED="Read,Grep,Glob,Edit,Write,$RUN_TESTS,Bash(git log *),Bash(git show *),Bash(git diff *),Bash(git status),Bash(git status *),Bash(git bisect start *),Bash(git bisect good *),Bash(git bisect bad *),Bash(git bisect log),Bash(git bisect reset),Bash(git bisect run $TEST_CMD tests/*),Bash(ls),Bash(ls *)"
+    DISALLOWED="WebFetch,WebSearch,NotebookEdit,Bash(git * --output*),Bash(git *--output=*),Bash(git *--ext-diff*),Bash(git push *),Bash(git commit *),Bash(gh *),$NO_TEST_WRITES"
     ;;
-  answer) TOOLS="Read,Grep,Glob,Bash,WebSearch"; ALLOWED="Read,Grep,Glob,WebSearch,$READ_BASH" ;;
+  answer) TOOLS="Read,Grep,Glob,Bash${WEB:+,$WEB}"; ALLOWED="Read,Grep,Glob${WEB:+,$WEB},$READ_BASH" ;;
   *) TOOLS="Read,Grep,Glob"; ALLOWED="Read,Grep,Glob" ;;
 esac
+# fix_pr gets the task, the route and triage's short task summary: never the drawers, the memory or the draft.
+TASK_SUMMARY=$(printf '%s' "$R" | jq -r '.task_summary // .reason // ""' | cut -c1-400)
+EVIDENCE_REFS=$(printf '%s' "$R" | jq -r '[.evidence[]? | select(.kind != "general") | .ref] | join(", ")' | cut -c1-400)
+if [ "$CLAIM_SOURCE" = slack ] && [ "$TRANSPORT" = mcp ]; then
+  TASK_TEXT="(a Slack thread; triage read it. The task, in triage's words: $TASK_SUMMARY)"
+else
+  TASK_TEXT=$MSG
+fi
 ACT_PROMPT=$(render "$ACT_PROMPT_FILE" OWNER_ID "$OWNER_ID" OWNER_NAME "$OWNER_NAME" FAILING_TEST "${FAILING_TEST:-}" \
-  BRANCH "$BRANCH" WORKTREE "$WT")
-say "work $ID: act $ROUTE ($WORK_MODEL), budget left \$$REMAINING"
+  BRANCH "$BRANCH" WORKTREE "$WT" TASK "$TASK_TEXT" SUMMARY "$TASK_SUMMARY" EVIDENCE "$EVIDENCE_REFS" ROUTE "$ROUTE")
+say "work $ID: act $ROUTE ($WORK_MODEL), budget left \$$REMAINING${FIX_SID:+, fresh session $FIX_SID}"
 case "$ROUTE" in
   answer) status "✍️ writing the answer…" ;;
   investigate) status "🔎 investigating: reading code, logs and tests…" ;;
   fix_pr) status "🛠️ fixing: a red test first, then the fix…" ;;
   *) status "✍️ writing the reply…" ;;
 esac
-run_claude "$C/act.json" "$ACT_PROMPT" --resume "$SID" --model "$WORK_MODEL" --tools "$TOOLS" \
-  --allowedTools "$ALLOWED" --disallowedTools "WebFetch,Bash(git push *),Bash(git commit *),Bash(gh *)" \
+# shellcheck disable=SC2086
+run_claude "$C/act.json" "$ACT_PROMPT" $ACT_SESSION --model "$WORK_MODEL" --tools "$TOOLS" \
+  --allowedTools "$ALLOWED" --disallowedTools "$DISALLOWED" \
   --max-turns 40 --max-budget-usd "$REMAINING" --json-schema "$(cat "$KIT/schema/verdict.json")"
-# A resumed run reports the whole conversation's cost (docs: headless, "earlier runs' spend included").
-_act_total=$(jq -r '.total_cost_usd // 0' "$C/act.json" 2>/dev/null || echo 0)
-if fgt "$_act_total" "$COST_TRIAGE"; then COST_TOTAL=$_act_total; else COST_TOTAL=$(fadd "$COST_TRIAGE" "$_act_total"); fi
+# A resumed run reports the whole conversation's cost (docs: headless, "earlier runs' spend included"): charge the delta.
+charge "$C/act.json" "$ACT_MODE" "$ACT_SID"
 V=$(jq -c '.structured_output // empty' "$C/act.json" 2>/dev/null)
 if [ -z "$V" ]; then
-  V=$(retry_structured "$C/act.json" "$(cat "$KIT/schema/verdict.json")" "$WORK_MODEL" "Read,Grep,Glob")
-  [ -n "$V" ] && COST_TOTAL=$(jq -r '.total_cost_usd // 0' "$C/act.json.retry") && say "work $ID: act needed one retry for its JSON"
+  retry_structured "$C/act.json" "$(cat "$KIT/schema/verdict.json")" "$WORK_MODEL" "Read,Grep,Glob" "$ACT_SID"
+  V=$RETRY_OUT
+  [ -n "$V" ] && say "work $ID: act needed one retry for its JSON"
 fi
 if [ -z "$V" ]; then
   _sub=$(jq -r '.subtype // "no output"' "$C/act.json" 2>/dev/null || echo "no output")
@@ -471,7 +560,7 @@ if [ "$ROUTE" = fix_pr ]; then
   _evidence=""
   if [ "$VERDICT" = fixed ]; then
     git -C "$WT" add -A
-    if git -C "$WT" commit -q -m "$_title" -m "Agent session: claude --resume $SID" >/dev/null 2>&1; then
+    if git -C "$WT" commit -q -m "$_title" -m "Agent session: claude --resume $ACT_SID" >/dev/null 2>&1; then
       _cap=$(diffcap "$WT" "$BASE") && _capok=1 || _capok=0
       _evidence="- diff: $_cap"
       if [ "$_capok" = 1 ]; then
@@ -488,20 +577,20 @@ $(printf '%s\n' "$_rg" | sed 's/^/- /')"
   printf '%s\n' "$_evidence" >"$C/gate.txt"
   if [ "$_gate_ok" = 1 ]; then
     _head=$(git -C "$WT" rev-parse --short HEAD)
-    _footer="🤖 Opened by $OWNER_NAME's agent · resume on $HOST: \`claude --resume $SID\`"
+    _footer="🤖 Opened by $OWNER_NAME's agent · resume on $HOST: \`claude --resume $ACT_SID\`"
     {
       printf '# %s\n\n' "$_title"
       printf '%s\n\n' "$(printf '%s' "$V" | jq -r '.pr_body // ""' | undash)"
       printf '## Proof (run by the script, not the model)\n\n%s\n- branch: `%s` at %s, base %s\n\n---\n%s\n' \
         "$_evidence" "$BRANCH" "$_head" "$(git -C "$WT" rev-parse --short "$BASE")" "$_footer"
     } >"$OUTBOX/$ID.pr.md"
-    if [ "$CLAIM_SOURCE" = slack ] && git -C "$TARGET_REPO" remote get-url origin >/dev/null 2>&1; then
-      # [T] untested: push the agent branch and open the PR. Branch protection on main is the backstop.
+    if [ "$ALLOW_PUSH" = true ] && [ "$CLAIM_SOURCE" = slack ] && git -C "$TARGET_REPO" remote get-url origin >/dev/null 2>&1; then
+      # [T] untested: push the agent branch and open the PR (ALLOW_PUSH=true only). Branch protection on main is the backstop.
       git -C "$WT" push -q origin "$BRANCH" && PR_REF=$(cd "$WT" && gh pr create --title "$_title" --body-file "$OUTBOX/$ID.pr.md" --head "$BRANCH" 2>/dev/null | tail -1)
     fi
     [ -n "$PR_REF" ] || PR_REF="outbox/$ID.pr.md (branch $BRANCH)"
     EXTRA_LINES="- **PR:** $PR_REF
-- **Resume:** \`claude --resume $SID\`
+- **Resume:** \`claude --resume $ACT_SID\`
 "
   else
     NOTES="$NOTES; fix gate failed, downgraded to investigate"

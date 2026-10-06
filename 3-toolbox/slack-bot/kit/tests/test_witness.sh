@@ -11,6 +11,11 @@ check "result hit is witnessed" 1700000000.000100 yes
 check "context message is NOT witnessed" 1700000000.000050 no
 check "unknown ts is NOT witnessed" 1700000000.999999 no
 check "prefix of a ts is NOT witnessed" 1700000000.0001 no
+W=$(mktemp)
+printf '%s\n' '{"result":"{\"messages\": [{\"ts\": \"1759900000.000100\", \"text\": \"hi\"}]}"}' >"$W"
+if witnessed 1759900000.000100 "$W"; then ok "fake Slack JSON wrapped in {result: string} is witnessed"; else bad "fake Slack JSON wrapped in {result: string} is witnessed"; fi
+if witnessed 1759900000.000200 "$W"; then bad "wrapped JSON: an unknown ts is NOT witnessed"; else ok "wrapped JSON: an unknown ts is NOT witnessed"; fi
+rm -f "$W"
 # thread_of(): the thread comes from the result's own permalink, never from context lines.
 T=tests/fixtures/witness-thread.txt
 tcheck() { got=$(thread_of "$2" "$T"); [ "$got" = "$3" ] && ok "$1" || bad "$1 (got $got)"; }

@@ -1,12 +1,12 @@
 {
-  "description": "w3-reception-kit fences. All three are no-ops unless RECEPTION_PHASE is set by watch.sh / work.sh.",
+  "description": "w3-reception-kit fences. All three are no-ops unless RECEPTION_PHASE is set by watch.sh / work.sh. The STOP hook (stop-guard.sh) is in bot-settings.json, written by install.sh with absolute paths.",
   "hooks": {
     "PreToolUse": [
       {
         "matcher": "mcp__claude_ai_Slack__.*",
         "hooks": [
-          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/watch-guard.sh", "timeout": 10 },
-          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/slack-guard.sh", "timeout": 10 }
+          { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/watch-guard.sh\"", "timeout": 10 },
+          { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/slack-guard.sh\"", "timeout": 10 }
         ]
       }
     ],
@@ -14,7 +14,7 @@
       {
         "matcher": "mcp__claude_ai_Slack__.*",
         "hooks": [
-          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/witness.sh", "timeout": 10 }
+          { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/witness.sh\"", "timeout": 10 }
         ]
       }
     ]

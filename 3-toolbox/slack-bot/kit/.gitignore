@@ -5,3 +5,4 @@ owner.env
 /log/
 PAUSED
 __pycache__/
+bot-settings.json

@@ -6,13 +6,16 @@
 #   read thread / get reactions  triage+act, claimed channel only
 #   add reaction                 act, claimed channel + thread, :eyes: only (the claim marker)
 #   send message                 act only, and ALL of:
-#     channel = CHANNEL_ID, thread_ts = the claimed thread, starts with SIGNATURE, ends with the 🔕 footer,
-#     no mentions except the owner, no broadcast, no secrets, no promise words,
+#     the script wrote state/claims/<id>/outgoing.txt and the text is exactly that (no file = no send),
+#     channel = CHANNEL_ID, thread_ts = the claimed thread (and message_ts, if given, too), no reply_broadcast,
+#     starts with SIGNATURE, ends with the 🔕 footer, no mentions except the owner, no broadcast mention,
+#     no secrets (token shapes, AWS keys, Slack webhooks, JWTs, values from the repo's .env), no promise words,
 #     🔕 check: slack = a reactions witness for this thread younger than 60 s that shows no :no_bell:;
 #               inbox = no inbox/<id>.no_bell file
 #   everything else (schedule, DM/create conversation, canvas, search, ...) is denied.
 . "$(dirname "$0")/lib.sh"
 case "$PHASE" in triage | act) ;; *) exit 0 ;; esac
+need_jq
 load_owner_env
 DIR=${RECEPTION_DIR:-$KIT}
 CLAIM=${RECEPTION_CLAIM:-}
@@ -23,25 +26,36 @@ CLAIM_FOCUS=$(cat "$C/focus" 2>/dev/null || printf '%s' "$CLAIM_TS")   # the mes
 CLAIM_SOURCE=$(cat "$C/source" 2>/dev/null)
 
 # [T] untested: argument names of the Slack connector tools. These are the assumed ones.
-channel=$(printf '%s' "$IN" | jq -r '.tool_input.channel_id // .tool_input.channel // ""')
-thread=$(printf '%s' "$IN" | jq -r '.tool_input.thread_ts // .tool_input.message_ts // .tool_input.ts // ""')
+channel=$(printf '%s' "$IN" | jq -r '.tool_input.channel_id // .tool_input.channel // ""') || deny "unreadable tool input"
+thread=$(printf '%s' "$IN" | jq -r '.tool_input.thread_ts // ""')   # a send must name the thread itself
+# Every ts-like argument the call carries, one per line: each one must point at the claimed thread.
+all_ts=$(printf '%s' "$IN" | jq -r '.tool_input | [.thread_ts, .message_ts, .ts, .timestamp] | map(select(. != null and . != "")) | .[] | tostring')
 msg=$(printf '%s' "$IN" | jq -r '.tool_input.message // .tool_input.text // ""')
+broadcast=$(printf '%s' "$IN" | jq -r '.tool_input.reply_broadcast // false | tostring')
 
 check_channel() { # CHANNEL_ID, or one of APP_CHANNELS (app transport)
+  [ -n "$channel" ] || deny "no channel given"
   case " $(printf '%s' "${APP_CHANNELS:-$CHANNEL_ID}" | tr ',' ' ') " in *" $channel "*) ;; *) deny "channel $channel is not $CHANNEL_ID" ;; esac
+}
+# check_ts: every ts argument (thread_ts AND message_ts AND ts) is the claimed thread or the reacted message.
+check_ts() {
+  [ -n "$all_ts" ] || deny "no thread_ts / message_ts given"
+  for _t in $all_ts; do
+    [ "$_t" = "$CLAIM_TS" ] || [ "$_t" = "$CLAIM_FOCUS" ] || deny "$1 ($CLAIM_TS), not $_t"
+  done
 }
 
 case "$TOOL" in
   "$SLACK_READ_THREAD_TOOL" | "$SLACK_REACTIONS_TOOL")
     check_channel
     # Other Slack messages are data the owner did not approve: only the claimed thread may be read.
-    [ "$thread" = "$CLAIM_TS" ] || [ "$thread" = "$CLAIM_FOCUS" ] || deny "may only read the claimed thread ($CLAIM_TS), not $thread"
+    check_ts "may only read the claimed thread"
     exit 0
     ;;
   "$SLACK_ADD_REACTION_TOOL")
     [ "$PHASE" = act ] || deny "reactions only in the act phase"
     check_channel
-    [ "$thread" = "$CLAIM_TS" ] || [ "$thread" = "$CLAIM_FOCUS" ] || deny "reaction outside the claimed thread"
+    check_ts "reaction outside the claimed thread"
     emoji=$(printf '%s' "$IN" | jq -r '.tool_input.name // .tool_input.emoji // .tool_input.reaction // ""')
     case "$emoji" in eyes | white_check_mark) ;; *) deny "only :eyes: (picked up) and :white_check_mark: (answered) may be added" ;; esac
     exit 0
@@ -54,13 +68,18 @@ esac
 [ "$PHASE" = act ] || deny "no posting during triage"
 check_channel
 [ -n "$CLAIM_TS" ] && [ "$thread" = "$CLAIM_TS" ] || deny "reply must go in the claimed thread ($CLAIM_TS), got '$thread'"
+_mts=$(printf '%s' "$IN" | jq -r '.tool_input.message_ts // empty')
+[ -z "$_mts" ] || [ "$_mts" = "$CLAIM_TS" ] || deny "message_ts $_mts is not the claimed thread"
+[ "$broadcast" = false ] || deny "reply_broadcast would post the reply to the whole channel"
 
 case "$msg" in "$SIGNATURE"*) ;; *) deny "missing signature '$SIGNATURE'" ;; esac
 trimmed=$(printf '%s' "$msg" | sed -e 's/[[:space:]]*$//' | tail -1)
 case "$trimmed" in *"$FOOTER" | *"$FOOTER"_) ;; *) deny "missing footer '$FOOTER'" ;; esac
 
 # Live sends must be exactly the reply the script approved (work.sh writes it before the post run).
-if [ "${RECEPTION_PREFLIGHT:-}" != 1 ] && [ -f "$C/outgoing.txt" ]; then
+# No outgoing.txt = the script approved nothing = no send.
+if [ "${RECEPTION_PREFLIGHT:-}" != 1 ]; then
+  [ -f "$C/outgoing.txt" ] || deny "no reply approved by the script (state/claims/$CLAIM/outgoing.txt is missing)"
   want=$(cat "$C/outgoing.txt")
   [ "$(printf '%s' "$msg" | sed -e 's/[[:space:]]*$//')" = "$(printf '%s' "$want" | sed -e 's/[[:space:]]*$//')" ] ||
     deny "text differs from the reply the script approved (send it verbatim)"
@@ -72,8 +91,14 @@ others=$(printf '%s' "$msg" | grep -o '<@[A-Za-z0-9]*>' | grep -v "^<@$OWNER_ID>
 printf '%s' "$msg" | grep -Eiq '<!(channel|here|everyone)>|(^|[^A-Za-z0-9])@(channel|here|everyone)([^A-Za-z0-9]|$)' && deny "broadcast mention"
 
 # Secrets: common token shapes, plus every value in the target repo's .env files.
-printf '%s' "$msg" | grep -Eq 'xox[abeprs]-[A-Za-z0-9-]+|xapp-[0-9]+-[A-Za-z0-9-]+|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-ant-[A-Za-z0-9_-]{10,}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY' &&
+printf '%s' "$msg" | grep -Eq 'xox[abeprs]-[A-Za-z0-9-]+|xapp-[0-9]+-[A-Za-z0-9-]+|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-ant-[A-Za-z0-9_-]{10,}|(AKIA|ASIA)[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY' &&
   deny "looks like a secret token"
+printf '%s' "$msg" | grep -Eiq 'hooks\.slack\.com/(services|workflows|triggers)/' && deny "looks like a Slack webhook URL"
+printf '%s' "$msg" | grep -Eq 'eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}' && deny "looks like a JWT"
+printf '%s' "$msg" | grep -Eiq 'aws_?secret_?access_?key|secret_?access_?key["'"'"' ]*[:=]' && deny "looks like an AWS secret access key"
+# An AWS secret key is 40 chars of base64. A git sha is 40 chars of hex, so: not all hex, and mixed case + a digit.
+printf '%s' "$msg" | tr -c 'A-Za-z0-9/+=' '\n' | grep -Ex '[A-Za-z0-9/+]{40}' | grep -Evx '[0-9a-f]+' |
+  grep '[A-Z]' | grep '[a-z]' | grep -q '[0-9]' && deny "looks like an AWS secret access key (40 chars of base64)"
 if [ -n "${TARGET_REPO:-}" ]; then
   for envf in "$TARGET_REPO"/.env "$TARGET_REPO"/.env.*; do
     [ -f "$envf" ] || continue

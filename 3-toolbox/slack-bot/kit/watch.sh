@@ -6,8 +6,10 @@
 #        SOURCE=inbox  every inbox/*.md not yet claimed and approved by the owner (reacted_by, default the owner)
 #        SOURCE=slack  Haiku runs ONE exact `hasmy::` search; a hit counts only if its ts is in Slack's raw
 #                      response (state/witness/<tick>.txt, written by hooks/witness.sh)   # [T] untested
-#   4. Atomic claim: mkdir state/claims/<id>. Whoever gets the mkdir works it; nobody works it twice.
-#   5. work.sh <id>  (background by default; --wait runs it in the foreground)
+#   4. A worker slot: mkdir state/workers/<n>, n = 1..MAX_WORKERS (default 2). No free slot = stop claiming; the
+#      rest waits for the next tick, so a burst of hits never starts more than MAX_WORKERS workers.
+#   5. Atomic claim: mkdir state/claims/<id>. Whoever gets the mkdir works it; nobody works it twice.
+#   6. work.sh <id>  (background by default; --wait runs it in the foreground). The slot is freed when it ends.
 set -u
 KIT=$(cd "$(dirname "$0")" && pwd)
 . "$KIT/lib/common.sh"
@@ -26,14 +28,39 @@ if ! is_armed; then
   exit 3
 fi
 
+# take_slot: claim a free worker slot (atomic mkdir). A slot whose worker is gone (dead pid) is freed first.
+SLOT=""
+take_slot() {
+  SLOT=""
+  _i=1
+  while [ "$_i" -le "$MAX_WORKERS" ]; do
+    _s=$STATE/workers/$_i
+    if [ -d "$_s" ]; then
+      _p=$(cat "$_s/pid" 2>/dev/null)
+      if [ -n "$_p" ] && ! kill -0 "$_p" 2>/dev/null; then rm -rf "$_s"
+      elif [ -z "$_p" ] && [ -n "$(find "$_s" -maxdepth 0 -mmin +2 2>/dev/null)" ]; then rm -rf "$_s"; fi
+    fi
+    if mkdir "$_s" 2>/dev/null; then SLOT=$_s; return 0; fi
+    _i=$((_i + 1))
+  done
+  return 1
+}
+free_slot() { [ -n "$SLOT" ] && rm -rf "$SLOT"; SLOT=""; }
+
 start_work() {
   unset RECEPTION_PHASE RECEPTION_TICK TRIGGER_QUERY
   if [ "$WAIT" = 1 ]; then
+    printf '%s\n' "$$" >"$SLOT/pid"
     "$WORK_CMD" "$1"
+    free_slot
   else
-    nohup "$WORK_CMD" "$1" >>"$LOGDIR/work-$1.log" 2>&1 &
+    # The wrapper frees the slot when work.sh ends; its pid marks the slot as busy until then.
+    nohup sh -c '"$1" "$2"; rm -rf "$3"' _ "$WORK_CMD" "$1" "$SLOT" >>"$LOGDIR/work-$1.log" 2>&1 &
+    printf '%s\n' "$!" >"$SLOT/pid"
+    SLOT=""
   fi
 }
+no_slot() { log "tick $TICK: all $MAX_WORKERS worker slots busy, the rest waits for the next tick"; echo "tick $TICK: $MAX_WORKERS workers busy"; }
 
 claimed=0
 case "$SOURCE" in
@@ -52,7 +79,8 @@ case "$SOURCE" in
         fi
         continue
       fi
-      mkdir "$STATE/claims/$id" 2>/dev/null || continue
+      take_slot || { no_slot; break; }
+      mkdir "$STATE/claims/$id" 2>/dev/null || { free_slot; continue; }
       printf 'inbox\n' >"$STATE/claims/$id/source"
       printf '%s\n' "$id" >"$STATE/claims/$id/ts"
       printf '%s\n' "$f" >"$STATE/claims/$id/message_path"
@@ -68,8 +96,10 @@ case "$SOURCE" in
     RECEPTION_PHASE=watch
     RECEPTION_TICK=$TICK
     export TRIGGER_QUERY RECEPTION_PHASE RECEPTION_TICK
+    [ -f "$BOT_SETTINGS" ] || { say "tick $TICK: no $BOT_SETTINGS, run install.sh"; exit 3; }
+    # shellcheck disable=SC2086
     out=$("$CLAUDE_BIN" -p "$(render "$KIT/prompts/watch.md" TRIGGER_QUERY "$TRIGGER_QUERY")" \
-      --model "$WATCH_MODEL" --tools "" --allowedTools "$SLACK_SEARCH_TOOL" \
+      $BOT_FLAGS --settings "$BOT_SETTINGS" --model "$WATCH_MODEL" --tools "" --allowedTools "$SLACK_SEARCH_TOOL" \
       --permission-mode dontAsk --permission-prompts none --max-turns 5 --max-budget-usd "$WATCH_BUDGET_USD" \
       --no-session-persistence --output-format json --json-schema "$(cat "$KIT/schema/watch.json")" \
       --plugin-dir "$KIT" </dev/null 2>>"$LOGDIR/watch.err")
@@ -103,8 +133,9 @@ case "$SOURCE" in
       mkdir -p "$tdir"
       # One worker per thread at a time. A busy thread is retried next tick; a lock older than 30 min is stale.
       [ -n "$(find "$tdir/busy" -maxdepth 0 -mmin +30 2>/dev/null)" ] && rmdir "$tdir/busy" 2>/dev/null
-      mkdir "$tdir/busy" 2>/dev/null || { log "tick $TICK: $ts waits, thread $parent is busy"; continue; }
-      mkdir "$STATE/claims/$id" 2>/dev/null || { rmdir "$tdir/busy"; continue; }
+      take_slot || { no_slot; break; }
+      mkdir "$tdir/busy" 2>/dev/null || { free_slot; log "tick $TICK: $ts waits, thread $parent is busy"; continue; }
+      mkdir "$STATE/claims/$id" 2>/dev/null || { rmdir "$tdir/busy"; free_slot; continue; }
       printf 'slack\n' >"$STATE/claims/$id/source"
       printf '%s\n' "$parent" >"$STATE/claims/$id/ts"
       printf '%s\n' "$ts" >"$STATE/claims/$id/focus"
