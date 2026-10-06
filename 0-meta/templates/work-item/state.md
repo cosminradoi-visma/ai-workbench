@@ -3,7 +3,7 @@ updated: YYYY-MM-DD
 verified: <!-- what you checked this against: git log, the deployed URL, the test run -->
 ---
 
-# <Name> — where it stands
+# <Name>: where it stands
 
 <!-- A snapshot, overwritten by kb-capture, under 80 lines. Lead with what an agent
      needs to start. History goes to log.md, long material to notes/. -->

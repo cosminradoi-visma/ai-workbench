@@ -1,4 +1,4 @@
-# 3-toolbox — what you reuse (shareable)
+# 3-toolbox: what you reuse (shareable)
 
 Everything here is safe to hand to a colleague as it is. Keep it that way.
 
