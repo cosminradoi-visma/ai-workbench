@@ -1,4 +1,4 @@
-# 0-meta — how this KB works
+# 0-meta: how this KB works
 
 | File | What it is |
 |------|------------|

@@ -16,7 +16,8 @@ You need the repo path and the workbench path. Ask for whichever is missing.
    Don't read source beyond what you need for commands and the non-obvious conventions.
 2. **Work item:** if `2-work/<name>/` doesn't exist, create it from the template (kind `repo`)
    and add it to `2-work/README.md` and `NOW.md`.
-3. **`AGENTS.md`** from `3-toolbox/project-kit/AGENTS.md`: commands from the build files;
+3. **`AGENTS.md`** from `3-toolbox/project-kit/AGENTS.md`: fill `## Operate` (keep that exact heading, the W3 bot
+   reads it) from the build files;
    "proving a change works" from CI; conventions only if non-obvious. **No repo overview.**
    Under 100 lines. If one exists, **merge**: keep everything still true, show the diff, never
    overwrite. If other tools' instruction files exist, fold their content into `AGENTS.md` and
@@ -26,18 +27,21 @@ You need the repo path and the workbench path. Ask for whichever is missing.
    with the real paths and send tools, and add the "who may start it, anyone can stop it" lines to `AGENTS.md`.
    **`CLAUDE.md`:** `@AGENTS.md` plus the compaction line. **`CLAUDE.local.md`:** the import of
    `2-work/<name>/state.md` with the real workbench path. Make sure `CLAUDE.local.md` is in `.gitignore`.
-5. **Guard rails:** copy `.claude/hooks/guard.py`, `prompt_guard.py`, `py` and `rules/tests.md`; merge
+5. **Guard rails:** copy `.claude/hooks/guard.py`, `prompt_guard.py`, `no_em_dash.py`, `py` and `rules/tests.md`; merge
    `gitattributes` into the repo's `.gitattributes` (hooks must stay LF on Windows). Merge
    `.claude/settings.json` (union of lists, keep existing hooks). Offer `pre-commit-config.yaml`.
 6. **Checks (drawer 7):** copy `.claude/agents/reviewer.md` and `.claude/golden/` (runner, README, example).
    Offer to draft **three golden tasks** from recently fixed bugs (`git log --oneline -30`): each a small real job
-   with a `check:` command that fails before the fix and passes after, and `protect:` on the tests. Don't run
+   with a `check:` command that fails before the fix and passes after, and `protect:` on the tests. If the repo will run
+   a bot, also copy the must-decline tasks from `3-toolbox/slack-bot/golden/`. Don't run
    them without asking; they cost tokens. Make sure the card has a `- Repo: \`<path>\`` line so `--report` sees the repo.
 7. **MCP (optional):** ask which live systems the work needs. Propose a pinned, read-only `.mcp.json`
    and run `kb-vet` on each server. Skip if none.
 8. **Prove it:** run `claude -p "What are the test and run commands here, and what's the next step on this item?" --max-turns 3`
    in the repo, or ask the user to open a fresh session and ask it. It should answer without exploring.
-9. Tell the user what to commit (AGENTS.md, CLAUDE.md, .claude/) and what stays local (CLAUDE.local.md).
+9. **Commit `.claude/` (hooks, settings, agents, golden) before any bot or golden run:** they run in worktrees of
+   `HEAD`, so uncommitted guards are simply absent there.
+10. Tell the user what to commit (AGENTS.md, CLAUDE.md, .claude/) and what stays local (CLAUDE.local.md).
 
 ## Don't
 

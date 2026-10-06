@@ -18,7 +18,7 @@ If it isn't there, offer to create it from `0-meta/templates/work-item/`.
 2. **`state.md`: overwrite, don't append.** Make "Right now", "Next" and "Waiting on" true *now*.
    Add a gotcha only if it cost real time. Update `updated:` and `verified:` (what you checked).
    Stay under 80 lines; move detail into `notes/` and link it.
-3. **`log.md`: append one line**, newest first: `YYYY-MM-DD — what happened (link)`.
+3. **`log.md`: append one line**, newest first: `YYYY-MM-DD: what happened (link)`.
 4. **Decisions:** for each real choice between alternatives made this session, follow `kb-decide`.
 5. **Learnings:** a lesson that applies beyond this item goes in `1-me/learnings.md`, one line.
    If the user corrected your judgment, ask whether it belongs in `1-me/how-i-work.md`.

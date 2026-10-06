@@ -3,7 +3,7 @@ updated: 2026-10-02
 verified: git log on main, the test run, the prod flag dashboard
 ---
 
-# Orders API — where it stands
+# Orders API: where it stands
 
 ## Right now
 

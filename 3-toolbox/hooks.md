@@ -30,7 +30,9 @@ print JSON with `"permissionDecision": "ask"` and a reason.
 | Recipe | Where |
 |--------|-------|
 | Guard: block secret files, force-push, pipe-to-shell, destructive SQL; ask on installs and agent-config edits | `project-kit/.claude/hooks/guard.py` |
-| Prompt guard: stop pasted tokens, private keys and real IBANs | `project-kit/.claude/hooks/prompt_guard.py` |
+| Prompt guard: stop pasted tokens, private keys, real IBANs and CNPs | `project-kit/.claude/hooks/prompt_guard.py` |
+| House style: no em-dashes in prose the agent writes (only its new text, only prose files); it rewrites the line itself | `project-kit/.claude/hooks/no_em_dash.py` |
+| Stop switch and unattended fences (private paths, post budget) | `guard.py` + `.claude/STOP` + `.claude/unattended.json` |
 | KB health at session start | this KB's `.claude/settings.json` |
 | Format on edit | below |
 | Not done until tests pass | below |
