@@ -44,14 +44,44 @@ Guard all of them, not only `send_message`.
 - Read `total_cost_usd` from `--output-format json` and stop above your budget.
 - Practise offline first: the same loop reading `inbox/*.md` instead of Slack.
 
-The full example (watcher, router, hooks, a demo repo with planted bugs) is Bogdan's `w3-reception-kit`
-and `weather-api` from the W3 workshop.
+## The working files
+
+Two folders next to this page, ready to copy:
+
+| Folder | What |
+|---|---|
+| `slack-bot/kit/` | The bot: `watch.sh` (one tick), `work.sh` (triage, then act), `install.sh` (deny rules + self-test), `slack-check.sh` (roll call), the hooks (`slack-guard.sh`, `watch-guard.sh`, `witness.sh`), prompts, schemas, agents, skills, and the tests |
+| `slack-bot/weather-api/` | The practice repo: a small FastAPI forecast service with planted bugs, reports in `bugs/`, `AGENTS.md`, an `operate` skill and `scripts/` |
+
+Setup, once:
+
+```sh
+cp -r slack-bot ~/w3 && cd ~/w3
+chmod +x kit/*.sh kit/hooks/*.sh kit/tests/*.sh kit/tests/slack-lane/run.sh weather-api/scripts/*.sh
+cd weather-api && cp .env.example .env && git init -q && git add -A && git commit -qm init && uv sync && uv run pytest -q && cd ..
+sh kit/tests/run.sh                # offline, no model, no Slack: ALL PASS
+cp kit/owner.env.example kit/owner.env   # your Slack id, channel id, TARGET_REPO=~/w3/weather-api
+```
+
+Then `kit/install.sh` (arms the bot only if the `.env` deny holds), `SOURCE=inbox` to practise with
+`inbox/*.md`, and `SOURCE=slack` for the real thing. The kit's own `README.md` has the details.
+
+Notes:
+- The exec bits do not survive this repo's upload, hence the `chmod` line. The hooks are called directly,
+  so they must be executable.
+- `weather-api/.env` is not shipped. `.env.example` has fake values: the lab checks the agent never reads them.
+- `uv.lock` is not shipped either: `uv sync` writes it.
+- This copy of weather-api has no git history, so `git bisect` exercises have nothing to walk.
+- The kit's Slack-app transport (`listen.sh`, a Slack app with its own token) is left out on purpose:
+  the lab runs on the Slack MCP only.
 
 ## Tested and not
 
 - Works (owner's account, self-DM): `hasmy::robot_face:` returns only the reacted message, about 30 s after the
   reaction; `claude -p` with the connector can search, read, react and reply in a thread under `dontAsk`;
   reaction user ids are readable with `slack_get_reactions`.
+- Works offline: `kit/tests/run.sh` (hooks, claims, routes, the red-on-base/green-on-head gate, mute, pause).
+- `kit/tests/slack-lane/run.sh` runs the Slack lane against a fake Slack MCP server (real `claude -p`, Haiku, about $0.30).
 - [T] Someone else's reaction excluded (needs a second account).
 - [T] The `edited` field on a message in the connector's output.
 - [T] Org policy for a normal participant: if send is set to `ask` for your workspace, `dontAsk` denies it.

@@ -10,6 +10,7 @@ Everything here is safe to hand to a colleague as it is. Keep it that way.
 | `mcp.md` | MCP servers: rules, vetting checklist, your register. |
 | `hooks.md` | Hooks: the events worth knowing and five recipes. |
 | `slack-bot.md` | A Slack bot on the Slack MCP connector, no Slack app: owner-only trigger, claim, stop, post fences, what is untested. |
+| `slack-bot/` | The working files for it: `kit/` (the bot, its hooks and tests) and `weather-api/` (the practice repo with planted bugs). |
 | `cheatsheet.html` | One printable A4 page: the loop, skills, safety rules, Visma data classes, ten tips. |
 | `project-kit/` | Drop-in files for a code repo: AGENTS.md, guards, a reviewer agent, golden tasks. `kb-link-repo` uses it. |
 | `personal-kit/` | Safe defaults for `~/.claude/`: global CLAUDE.md, settings, status line. `kb-setup` offers it. |
