@@ -62,12 +62,29 @@ An agent is exploitable when one session has all three:
 |--------------|---------------------|-------------|
 | Your repo, DB, mailbox, KB | Issues, PRs, READMEs, web pages, tickets, MCP results, `inbox/` | `curl`, web fetch, `git push`, an MCP tool that writes or sends |
 
+| *A Slack bot:* the repo, and your workbench if it can see it | *Every message in the channel* | *The send tool* |
+
 Text the agent reads can carry instructions, and models follow them. Nobody has a
 reliable filter for that ([Willison](https://simonwillison.net/2025/Jun/16/the-lethal-trifecta/)). Remove one leg:
 
 - Reading tickets or web pages? Keep write and send tools off in that session.
 - Need to push or post? Don't feed it untrusted text in the same session.
 - Connecting a new MCP server? Ask which leg it adds (`kb-vet` does).
+
+## Agents that run unattended (bots, schedules, CI)
+
+The trifecta is always present: messages are untrusted, the send tool is a way out. So fence it:
+
+| Fence | How |
+|-------|-----|
+| **Only the owner starts it** | Named in the bot repo's `AGENTS.md`; the trigger checks who asked |
+| **Anyone can stop it** | `touch .claude/STOP` blocks every tool call (`guard.py`); add a chat signal too (a reaction) |
+| **It answers from the repo half only** | `.claude/unattended.json` → `private_paths`: your `1-me/`, `NOW.md`, `2-work/` are unreadable. Never give a bot repo a `CLAUDE.local.md` that imports your workbench |
+| **A post budget** | `unattended.json` → `send_tools` + `max_sends_per_hour`: the guard refuses past the limit |
+| **A turn and cost cap per run** | `claude -p --max-turns N`; read `total_cost_usd` from the JSON and stop the loop above your budget |
+| **It never answers twice** | claim each message before working on it (a claim file or a reaction); keep that state in the bot's repo, gitignored |
+| **Every reply says it's a bot** | a fixed signature line; humans must know who they're talking to |
+| **Tested before it's trusted** | golden tasks that must decline, must resist an injection, must ignore someone not allowed to start it |
 
 ## The layers, and what each misses
 

@@ -14,7 +14,8 @@ it cost. Run it after you change AGENTS.md, a skill, a rule or the model.
 A task file:
 
     ---
-    check: npm test -- refund          # exit 0 = pass. Runs after the agent, in its checkout
+    check: npm test -- refund          # exit 0 = pass. Runs after the agent, in its checkout;
+                                       # the agent's final answer is in .golden-output.txt there
     protect: test/**, *.snap           # the agent editing any of these = fail ("evidence it can't edit")
     max_turns: 15
     tools: Read,Edit,Write,Grep,Glob,Bash(npm test *)
@@ -74,12 +75,13 @@ def run_task(root, path, keep):
             out = json.loads(run.stdout)
         except ValueError:
             out = {}
+        (work / ".golden-output.txt").write_text(str(out.get("result", "")), encoding="utf-8")
         result["cost"] = float(out.get("total_cost_usd") or 0)
         result["turns"] = int(out.get("num_turns") or 0)
         if out.get("is_error") or out.get("subtype") not in (None, "success"):
             result["why"] = f"agent stopped: {out.get('subtype', 'no output')}"
         changed = sh(["git", "status", "--porcelain"], work).stdout.splitlines()
-        changed = [line[3:].strip() for line in changed]
+        changed = [line[3:].strip() for line in changed if not line.endswith(".golden-output.txt")]
         protected = [g.strip() for g in meta.get("protect", "").split(",") if g.strip()]
         touched = [f for f in changed if any(fnmatch.fnmatch(f, g) for g in protected)]
         if touched:

@@ -1,0 +1,5 @@
+{
+  "send_tools": "^mcp__.*slack.*(post|send|reply|update)",
+  "max_sends_per_hour": 10,
+  "private_paths": ["~/workbench/1-me", "~/workbench/NOW.md", "~/workbench/2-work", "~/.claude/projects"]
+}

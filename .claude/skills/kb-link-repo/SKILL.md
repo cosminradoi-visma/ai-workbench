@@ -21,7 +21,10 @@ You need the repo path and the workbench path. Ask for whichever is missing.
    Under 100 lines. If one exists, **merge**: keep everything still true, show the diff, never
    overwrite. If other tools' instruction files exist, fold their content into `AGENTS.md` and
    leave a one-line pointer behind.
-4. **`CLAUDE.md`:** `@AGENTS.md` plus the compaction line. **`CLAUDE.local.md`:** the import of
+4. **Ask: will an agent run here unattended** (a bot, a schedule, CI)? If yes: **no `CLAUDE.local.md`** (it would
+   feed your private workbench to every run), copy `.claude/unattended.json.example` to `.claude/unattended.json`
+   with the real paths and send tools, and add the "who may start it, anyone can stop it" lines to `AGENTS.md`.
+   **`CLAUDE.md`:** `@AGENTS.md` plus the compaction line. **`CLAUDE.local.md`:** the import of
    `2-work/<name>/state.md` with the real workbench path. Make sure `CLAUDE.local.md` is in `.gitignore`.
 5. **Guard rails:** copy `.claude/hooks/guard.py`, `prompt_guard.py`, `py` and `rules/tests.md`; merge
    `gitattributes` into the repo's `.gitattributes` (hooks must stay LF on Windows). Merge

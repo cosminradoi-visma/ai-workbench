@@ -80,7 +80,9 @@ equivalents for other tools are at the end.
 
 ## Unattended (CI, schedules)
 
-30. **Headless needs a fence:** `--bare` (ignore repo config), `--max-turns`, an `--allowedTools`
+30. **Unattended needs fences, not trust:** see the fence table in `safety.md` (owner-only start, anyone can stop,
+    private half unreadable, post budget, turn and cost cap, claim before work, signed replies, golden tasks that must decline).
+    **Headless needs a fence:** `--bare` (ignore repo config), `--max-turns`, an `--allowedTools`
     allowlist, a token with the least scope, and output that a human or a test checks before anything merges.
 31. **Never `bypassPermissions` outside a throwaway container.** In CI the container is the boundary.
 32. **Share a team's skills and hooks by committing them** (`.claude/` in the repo). For many repos, a plugin marketplace.

@@ -5,14 +5,21 @@
        --no-verify, pipe-to-shell, uploading files with curl, destructive SQL, rm -rf on / or ~.
   ASK  (JSON permissionDecision "ask"): installing named packages (slopsquatting check),
        sudo, and edits to files that change how agents behave in this repo.
+  STOP anyone can stop every agent in this repo: `touch .claude/STOP`. Remove it to resume.
+  UNATTENDED (only if .claude/unattended.json exists, for bots and scheduled runs):
+       - private_paths: never read (a bot answers from the repo half, never your 1-me/ or NOW.md)
+       - send_tools + max_sends_per_hour: a post budget on the tools that talk to people
 
 Short and readable on purpose: extend the lists for your repo. A hook is one layer, not
 the wall. See 3-toolbox/safety.md. If the input can't be parsed, it allows the call
 (fail-open), so the agent never gets stuck on a broken hook.
 """
 import json
+import os
+import pathlib
 import re
 import sys
+import time
 
 SECRET_PATH = (
     r"(\.env(\.(?!example\b|sample\b|template\b|dist\b)[\w-]+)*(?=$|[\s'\"/;|&)])"
@@ -58,6 +65,31 @@ def ask(reason):
     sys.exit(0)
 
 
+def unattended(project, tool, args):
+    try:
+        cfg = json.loads((project / ".claude" / "unattended.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return
+    text = " ".join(str(v) for v in args.values())
+    for raw in cfg.get("private_paths", []):
+        full = os.path.expanduser(raw).rstrip("/")
+        if full and (full in text or raw.rstrip("/") in text):
+            deny(f"{raw} is private: an unattended agent answers from this repo only")
+    send = cfg.get("send_tools")
+    if send and re.search(send, tool, re.I):
+        limit = int(cfg.get("max_sends_per_hour", 10))
+        log = project / ".claude" / "state" / "sends.log"
+        now = time.time()
+        try:
+            recent = [float(t) for t in log.read_text().split() if now - float(t) < 3600]
+        except (OSError, ValueError):
+            recent = []
+        if len(recent) >= limit:
+            deny(f"post budget reached: {limit} sends in the last hour")
+        log.parent.mkdir(parents=True, exist_ok=True)
+        log.write_text(" ".join(str(t) for t in recent + [now]))
+
+
 def main():
     try:
         event = json.load(sys.stdin)
@@ -65,6 +97,10 @@ def main():
         sys.exit(0)
     tool = event.get("tool_name", "")
     args = event.get("tool_input") or {}
+    project = pathlib.Path(os.environ.get("CLAUDE_PROJECT_DIR") or event.get("cwd") or ".")
+    if (project / ".claude" / "STOP").exists():
+        deny("this repo is stopped (.claude/STOP exists). Remove that file to resume")
+    unattended(project, tool, args)
 
     if tool == "Bash":
         cmd = args.get("command", "")

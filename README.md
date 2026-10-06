@@ -13,8 +13,8 @@ would otherwise guess at, or spend tokens finding out:
 
 | # | Drawer | The agent needs to know… | Lives in | Costs |
 |---|--------|--------------------------|----------|-------|
-| 1 | **Identity** | who it works for, and how they decide | `1-me/profile.md`, `how-i-work.md` | every session (keep it short) |
-| 2 | **Memory** | where things stand, what happened, what went wrong | `NOW.md`, `2-work/<item>/state.md` + `log.md`, `1-me/learnings.md` | two small pages, then on demand |
+| 1 | **Identity** | who it works for, and how they decide. For a bot: who may start it, and that anyone can stop it | `1-me/profile.md`, `how-i-work.md`; a bot repo's `AGENTS.md` + `.claude/STOP` | every session (keep it short) |
+| 2 | **Memory** | where things stand, what happened, what went wrong | `NOW.md`, `2-work/<item>/state.md` + `log.md`, `1-me/learnings.md` (a bot's per-message state is runtime data: in its own repo, gitignored) | two small pages, then on demand |
 | 3 | **Rules** | how work is done in *this* repo | the repo's `AGENTS.md`; `.claude/rules/*.md` with `paths:` | every session there; scoped rules only when relevant |
 | 4 | **Skills** | the procedures it can run | `.claude/skills/` (KB, repo, or `~/.claude/skills/`) | ~50 tokens each until used |
 | 5 | **Reach** | which live systems it may touch, and how | MCP servers per repo, or a CLI; the register in `3-toolbox/mcp.md` | its tool names, every session |
