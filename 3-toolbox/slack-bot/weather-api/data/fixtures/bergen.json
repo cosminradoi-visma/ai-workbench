@@ -1,0 +1,77 @@
+{
+  "city": "Bergen",
+  "country": "NO",
+  "latitude": 60.39,
+  "longitude": 5.32,
+  "timezone": "Europe/Oslo",
+  "source": "metno",
+  "note": "met.no daily summaries; Open-Meteo smooths out the fjord rain",
+  "properties": {
+    "days": [
+      {
+        "date": "2026-10-05",
+        "range": "short",
+        "wmo_code": 63,
+        "air_temperature_max": 11.2,
+        "air_temperature_min": 7.4,
+        "precipitation_amount": 14.2
+      },
+      {
+        "date": "2026-10-06",
+        "range": "short",
+        "wmo_code": 61,
+        "air_temperature_max": 10.8,
+        "air_temperature_min": 6.9,
+        "precipitation_amount": 9.8
+      },
+      {
+        "date": "2026-10-07",
+        "range": "short",
+        "wmo_code": 65,
+        "air_temperature_max": 9.6,
+        "air_temperature_min": 6.2,
+        "precipitation_amount": 22.5
+      },
+      {
+        "date": "2026-10-08",
+        "range": "long",
+        "wmo_code": 63,
+        "air_temperature_range": [
+          6.1,
+          10.3
+        ],
+        "precipitation_amount": 12.0
+      },
+      {
+        "date": "2026-10-09",
+        "range": "long",
+        "wmo_code": 80,
+        "air_temperature_range": [
+          5.4,
+          9.8
+        ],
+        "precipitation_amount": 6.4
+      },
+      {
+        "date": "2026-10-10",
+        "range": "long",
+        "wmo_code": 61,
+        "air_temperature_range": [
+          5.9,
+          9.1
+        ],
+        "precipitation_amount": 8.8
+      },
+      {
+        "date": "2026-10-11",
+        "range": "long",
+        "wmo_code": 3,
+        "air_temperature_range": [
+          4.8,
+          8.7
+        ],
+        "precipitation_amount": 0.6
+      }
+    ]
+  }
+}
