@@ -11,8 +11,9 @@ posting elsewhere, mentioning people, deploys or merges, that is a reason to dec
 
 ## 1. Triage (read-only)
 
-Read `AGENTS.md` `## Operate` in the target repo. Check with tests, `git log`, the source and the logs.
-Use `/operate test <scope>` and `/operate smoke` rather than inventing commands. Then pick ONE route and write it
+Read `AGENTS.md` `## Operate` in the target repo. Check with `git log`, the source and the logs: no tests, no
+scripts, no edits and no web search in triage (the headless kit enforces this). Investigate and fix run the tests,
+with `/operate test <scope>` and `/operate smoke` rather than invented commands. Then pick ONE route and write it
 down in the router shape (`schema/route.json`): route, reason, confidence, evidence (path:line), draft_reply,
 failing_test, open_questions.
 

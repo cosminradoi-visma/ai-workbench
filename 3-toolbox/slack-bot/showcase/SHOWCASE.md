@@ -10,7 +10,7 @@ sh setup.sh                          # kit + weather-api into ~/w3
 cp -R showcase ~/w3/ && cd ~/w3/showcase
 cp owner.env.example owner.env
 OWNER_ENV=$PWD/owner.env ../kit/find-self-dm.sh   # one message to yourself; fills OWNER_ID, CHANNEL_ID, MCP_DENY
-OWNER_ENV=$PWD/owner.env ../kit/install.sh        # must say ARMED
+OWNER_ENV=$PWD/owner.env ../kit/install.sh        # must say ARMED (every canary denied, bot-settings.json written)
 ./stage-reset.sh
 ```
 
@@ -52,6 +52,9 @@ own DM, react 🤖, and post the answer back in your thread. Keep your own watch
 you relay to yourself the same way.
 
 ## Reset
+
+After the session, on a real workbench: `OWNER_ENV=$PWD/owner.env ../kit/cleanup.sh` removes the bot's worktrees,
+branches, claims, outbox, memory and its session transcripts (they hold the drawers).
 
 `./stage-reset.sh`: removes agent worktrees and `agent/*` branches in weather-api, clears claims, outbox, logs and
 inbox, restores the thread memory from `memory/threads.seed.jsonl`. Local only.
