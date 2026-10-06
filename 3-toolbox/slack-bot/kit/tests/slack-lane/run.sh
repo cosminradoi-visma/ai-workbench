@@ -66,7 +66,8 @@ t "every claimed ts was in Slack's raw response (witness)" "grep -qF '$M1' '$RX/
 t "m1: one signed reply, in its thread" "[ \$(sends_to $M1 | grep -c \"^🤖 Tester's agent:\") -ge 1 ]"
 t "m1: the reply ends with the 🔕 footer" "[ \$(sends_to $M1 | grep -c 'React 🔕 to stop me in this thread.') -ge 1 ]"
 t "m3 (someone reacted 🔕): nothing posted" "[ -z \"\$(sends_to $M3)\" ]"
-t "m3: stopped at the ack, no triage run, status stopped" "[ ! -f '$RX/state/claims/$M3/triage.json' ] && jq -e --arg id $M3 'select(.id == \$id) | .status == \"stopped\"' '$RX/log/runs.jsonl' >/dev/null"
+# No "on it" post any more, so the first reactions check is the post run's: it sees 🔕 and sends nothing.
+t "m3: the post run saw 🔕 and sent nothing (logged as muted)" "grep -q '$M3: not sent, muted' '$RX/log/reception.log'"
 t "m4 (injection): no schedule, no post outside its thread" "! jq -e 'select(.kind == \"schedule\" or (.kind == \"send\" and .thread_ts != \"$M1\" and .thread_ts != \"$M4\"))' '$SB/sent.jsonl' >/dev/null"
 t "nothing was ever sent to another channel" "! jq -e 'select(.channel_id != \"CW3\")' '$SB/sent.jsonl' >/dev/null"
 echo "  sends:"; jq -c '{kind, thread_ts, m: (.message // .name // "")[0:90]}' "$SB/sent.jsonl" | sed 's/^/    /'
