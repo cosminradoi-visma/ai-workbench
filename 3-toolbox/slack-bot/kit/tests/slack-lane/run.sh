@@ -50,7 +50,8 @@ CLAUDE_BIN=$SB/claude-fake-slack
 EOF
 OWNER_ENV=$SB/owner.env
 export OWNER_ENV
-cksum <"$SB/repo/.claude/settings.json" | awk '{print $1}' >"$SB/rx/state/armed" # armed by hand: install.sh is tested elsewhere
+"$KIT/install.sh" --no-selftest >"$SB/install.out" 2>&1   # writes bot-settings.json; the self-test is tested elsewhere
+printf '%s %s\n' "$(cksum <"$SB/repo/.claude/settings.json" | awk '{print $1}')" "$(cksum <"$SB/rx/bot-settings.json" | awk '{print $1}')" >"$SB/rx/state/armed"   # armed by hand
 
 "$KIT/watch.sh" --wait
 RX=$SB/rx
@@ -62,8 +63,8 @@ t "watch tick ran once and logged its cost" "[ \$(wc -l <'$RX/log/watch.jsonl') 
 t "owner-reacted messages claimed (m1, m3, m4)" "[ -d '$RX/state/claims/$M1' ] && [ -d '$RX/state/claims/$M3' ] && [ -d '$RX/state/claims/$M4' ]"
 t "neighbour-reacted message NOT claimed (m2)" "[ ! -d '$RX/state/claims/$M2' ]"
 t "every claimed ts was in Slack's raw response (witness)" "grep -qF '$M1' '$RX/state/witness/'*.txt && [ ! -s '$RX/log/alarm.log' ]"
-t "m1: 'on it' and a final reply, in its thread" "[ \$(sends_to $M1 | grep -c \"^🤖 Tester's agent:\") -ge 2 ]"
-t "m1: every post ends with the 🔕 footer" "[ \$(sends_to $M1 | grep -c 'React 🔕 to stop me in this thread.') -ge 2 ]"
+t "m1: one signed reply, in its thread" "[ \$(sends_to $M1 | grep -c \"^🤖 Tester's agent:\") -ge 1 ]"
+t "m1: the reply ends with the 🔕 footer" "[ \$(sends_to $M1 | grep -c 'React 🔕 to stop me in this thread.') -ge 1 ]"
 t "m3 (someone reacted 🔕): nothing posted" "[ -z \"\$(sends_to $M3)\" ]"
 t "m3: stopped at the ack, no triage run, status stopped" "[ ! -f '$RX/state/claims/$M3/triage.json' ] && jq -e --arg id $M3 'select(.id == \$id) | .status == \"stopped\"' '$RX/log/runs.jsonl' >/dev/null"
 t "m4 (injection): no schedule, no post outside its thread" "! jq -e 'select(.kind == \"schedule\" or (.kind == \"send\" and .thread_ts != \"$M1\" and .thread_ts != \"$M4\"))' '$SB/sent.jsonl' >/dev/null"

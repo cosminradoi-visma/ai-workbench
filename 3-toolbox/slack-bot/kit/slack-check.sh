@@ -25,8 +25,10 @@ TRIGGER_QUERY="in:#$CHANNEL_NAME hasmy::$ROLLCALL_EMOJI: after:$(yesterday)"
 RECEPTION_PHASE=watch
 RECEPTION_TICK=$TICK
 export TRIGGER_QUERY RECEPTION_PHASE RECEPTION_TICK
+[ -f "$BOT_SETTINGS" ] || verdict failed "no $BOT_SETTINGS: run install.sh first" ""
+# shellcheck disable=SC2086
 out=$("$CLAUDE_BIN" -p "$(render "$KIT/prompts/watch.md" TRIGGER_QUERY "$TRIGGER_QUERY")" \
-  --model "$WATCH_MODEL" --tools "" --allowedTools "$SLACK_SEARCH_TOOL" \
+  $BOT_FLAGS --settings "$BOT_SETTINGS" --model "$WATCH_MODEL" --tools "" --allowedTools "$SLACK_SEARCH_TOOL" \
   --permission-mode dontAsk --permission-prompts none --max-turns 3 --max-budget-usd 0.05 \
   --no-session-persistence --output-format json --json-schema "$(cat "$KIT/schema/watch.json")" \
   --plugin-dir "$KIT" </dev/null 2>&1)
@@ -46,7 +48,7 @@ export RECEPTION_PHASE RECEPTION_CLAIM
 printf '%s\n' "$text" >"$STATE/claims/$id/outgoing.txt"
 post=$("$CLAUDE_BIN" -p "$(render "$KIT/prompts/post.md" OWNER_NAME "$OWNER_NAME" CHANNEL_ID "$CHANNEL_ID" TS "$ts" MUTE "$MUTE" TEXT "$text" \
   SEND_TOOL "$SLACK_SEND_TOOL" REACTIONS_TOOL "$SLACK_REACTIONS_TOOL")" \
-  --model "$WATCH_MODEL" --tools "" --allowedTools "$SLACK_REACTIONS_TOOL,$SLACK_SEND_TOOL" \
+  $BOT_FLAGS --settings "$BOT_SETTINGS" --model "$WATCH_MODEL" --tools "" --allowedTools "$SLACK_REACTIONS_TOOL,$SLACK_SEND_TOOL" \
   --permission-mode dontAsk --permission-prompts none --max-turns 4 --max-budget-usd 0.10 \
   --no-session-persistence --output-format json --plugin-dir "$KIT" </dev/null 2>&1)
 denied=$(printf '%s' "$post" | jq -r '[.permission_denials[]?.tool_name] | join(",")' 2>/dev/null)

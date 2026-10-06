@@ -46,9 +46,11 @@ EOT
   FAKE_DIR=$SB/fake
   export OWNER_ENV FAKE_DIR
   mkdir -p "$RX/state/claims" "$RX/inbox" "$RX/outbox" "$RX/log"
+  echo '{"permissions":{"deny":["Read(.env*)"]}}' >"$RX/bot-settings.json"   # install.sh writes the real one
 }
 
-arm() { cksum <"$TARGET/.claude/settings.json" | awk '{print $1}' >"$RX/state/armed"; }
+_sum() { cksum <"$1" | awk '{print $1}'; }
+arm() { printf '%s %s\n' "$(_sum "$TARGET/.claude/settings.json")" "$(_sum "$RX/bot-settings.json")" >"$RX/state/armed"; }
 
 # claim ID [source] [ts]: what watch.sh does before calling work.sh
 claim() {
