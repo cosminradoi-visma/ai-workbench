@@ -16,9 +16,9 @@ WAIT=0
 WORK_CMD=${WORK_CMD:-$KIT/work.sh}
 TICK=$(date +%Y%m%dT%H%M%S)-$$
 
-if [ -f "$RECEPTION_DIR/PAUSED" ]; then
-  log "tick $TICK: PAUSED, nothing done"
-  echo "paused ($RECEPTION_DIR/PAUSED exists)"
+if _why=$(stop_reason); then
+  log "tick $TICK: $_why, nothing done"
+  echo "stopped: $_why"
   exit 0
 fi
 if ! is_armed; then
@@ -64,7 +64,7 @@ case "$SOURCE" in
     ;;
   slack)
     # [T] untested: needs the claude.ai Slack connector under claude -p, hasmy:: passed through, tool names.
-    TRIGGER_QUERY="in:<#$CHANNEL_ID> hasmy::$TRIGGER: after:$(yesterday)"   # in:<#ID> works for channels and DMs (tested 5 Oct)
+    TRIGGER_QUERY=$(trigger_query)   # in:<#ID> works for channels and DMs (tested 5 Oct)
     RECEPTION_PHASE=watch
     RECEPTION_TICK=$TICK
     export TRIGGER_QUERY RECEPTION_PHASE RECEPTION_TICK
@@ -80,11 +80,19 @@ case "$SOURCE" in
       printf '%s tick %s: the watcher did not search Slack (no witness). Treat as a failed tick, not "no messages".\n' "$(now)" "$TICK" >>"$LOGDIR/alarm.log"
       say "tick $TICK: WARNING no search happened (see log/alarm.log)"
     fi
-    for row in $(printf '%s' "$out" | jq -r '.structured_output.hits[]? | "\(.ts)|\(.channel)"' 2>/dev/null); do
+    # Hits come from Slack's raw response (seen 6 Oct: Haiku searched, Slack found the message, Haiku said 0 hits).
+    # The model's own list is only a fallback for responses in another shape (the local fake Slack).
+    rows=$(hits_from_witness "$STATE/witness/$TICK.txt" | sed "s/\$/|$CHANNEL_ID/")
+    [ -n "$rows" ] || rows=$(printf '%s' "$out" | jq -r '.structured_output.hits[]? | "\(.ts)|\(.channel)"' 2>/dev/null)
+    for row in $rows; do
       ts=${row%%|*}
       ch=${row#*|}
       if ! witnessed "$ts" "$STATE/witness/$TICK.txt"; then
         printf '%s tick %s: %s NOT-WITNESSED (the model named a message Slack did not return)\n' "$(now)" "$TICK" "$ts" >>"$LOGDIR/alarm.log"
+        continue
+      fi
+      if [ "$SELF_DM" = true ] && ! self_dm_ok "$ts" "$STATE/witness/$TICK.txt"; then
+        printf '%s tick %s: %s is not in a DM with only the owner, or not written by the owner (SELF_DM=true)\n' "$(now)" "$TICK" "$ts" >>"$LOGDIR/alarm.log"
         continue
       fi
       id=$(safe_id "$ts")

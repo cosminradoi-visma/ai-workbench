@@ -80,6 +80,7 @@ The trifecta is always present: messages are untrusted, the send tool is a way o
 | **Only the owner starts it** | Named in the bot repo's `AGENTS.md`; the trigger checks who asked |
 | **Anyone can stop it** | `touch .claude/STOP` blocks every tool call (`guard.py`); add a chat signal too (a reaction) |
 | **It answers from the repo half only** | `.claude/unattended.json` → `private_paths`: your `1-me/`, `NOW.md`, `2-work/` are unreadable. Never give a bot repo a `CLAUDE.local.md` that imports your workbench |
+| **One exception: a bot in your DM with yourself** | Nobody else can write there, so the untrusted-content leg is gone. The script, not the model, may hand it your drawers, and only after Slack's own response shows you are the DM's only participant. Replies go nowhere else. See `slack-bot.md` |
 | **A post budget** | `unattended.json` → `send_tools` + `max_sends_per_hour`: the guard refuses past the limit |
 | **A turn and cost cap per run** | `claude -p --max-turns N`; read `total_cost_usd` from the JSON and stop the loop above your budget |
 | **It never answers twice** | claim each message before working on it (a claim file or a reaction); keep that state in the bot's repo, gitignored |

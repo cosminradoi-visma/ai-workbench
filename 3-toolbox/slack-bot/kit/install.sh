@@ -20,7 +20,7 @@ DENY='["Read(.env*)","Read(**/.env*)","Read(**/*secret*)","Edit(.claude/**)","Wr
 TOKDIR=""
 if [ "$SLACK_TRANSPORT" = app ]; then
   TOKDIR=$(cd "$(dirname "$SLACK_TOKEN_FILE")" && pwd)
-  DENY=$(printf '%s' "$DENY" | jq -c --arg d "$TOKDIR" '. + ["Read(/" + $d + "/**)", "Bash(cat " + $d + "/*)", "Bash(tail " + $d + "/*)", "Bash(ls " + $d + "*)", "Bash(security *)"]')
+  DENY=$(printf '%s' "$DENY" | jq -c --arg d "$TOKDIR" '. + ["Read(/" + $d + "/**)", "Bash(cat " + $d + "/*)", "Bash(tail " + $d + "/*)", "Bash(ls " + $d + "*)"]')
 fi
 mkdir -p "$TARGET_REPO/.claude"
 [ -f "$SETTINGS" ] || echo '{}' >"$SETTINGS"

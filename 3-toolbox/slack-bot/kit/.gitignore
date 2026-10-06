@@ -1,7 +1,7 @@
 owner.env
-inbox/
-outbox/
-state/
-log/
+/inbox/
+/outbox/
+/state/
+/log/
 PAUSED
 __pycache__/

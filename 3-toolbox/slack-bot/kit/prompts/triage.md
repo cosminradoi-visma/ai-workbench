@@ -25,6 +25,7 @@ Be quick: about 10 tool calls is plenty. Do not start servers.
 Output: the route JSON. evidence refs are repo-relative (path:line, or a commit sha). draft_reply follows the Slack formatting below, at most 8 lines,
 no greeting and no signature (the script adds both the signature and the footer). No em-dashes. open_questions: what you would need to know.
 {{MEMORY}}
+{{WORKBENCH}}
 
 Slack formatting for the reply (standard markdown, the connector converts it):
 - First line: the answer or the conclusion, in plain words. No greeting, no signature, no heading (the script adds them).

@@ -7,7 +7,8 @@
 load_owner_env
 [ -n "${TRIGGER_QUERY:-}" ] || deny "TRIGGER_QUERY not set"
 [ "$TOOL" = "$SLACK_SEARCH_TOOL" ] || deny "only $SLACK_SEARCH_TOOL is allowed while watching"
-# [T] untested: the search tool's argument name. "query" is assumed.
-q=$(printf '%s' "$IN" | jq -r '.tool_input.query // ""')
-[ "$q" = "$TRIGGER_QUERY" ] || deny "query must be exactly the trigger query"
+# Whatever the model typed, the search runs with exactly the trigger query: updatedInput replaces the
+# whole tool input (seen 6 Oct: Haiku mangled from:<@U...> and the strict-equality check denied every tick).
+jq -nc --arg q "$TRIGGER_QUERY" '{hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "allow",
+  permissionDecisionReason: "search pinned to the trigger query", updatedInput: {query: $q}}}'
 exit 0

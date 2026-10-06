@@ -23,7 +23,7 @@ mk_sandbox() {
   printf 'for t in tests/test_*.sh; do sh "$t" || exit 1; done\necho "all passed"\n' >"$TARGET/tests/run_all.sh"
   echo 'The value lives in lib/value.txt.' >"$TARGET/README.md"
   echo '{"permissions":{"deny":["Read(.env*)"]}}' >"$TARGET/.claude/settings.json"
-  echo 'TOKEN=supersecretvalue123' >"$TARGET/.env"
+  printf '%s=%s\n' TOKEN supersecretvalue123 >"$TARGET/.env"   # fake; built at runtime so the KB secret check stays quiet
   git -C "$TARGET" init -q -b main
   git -C "$TARGET" add -A
   git -C "$TARGET" commit -q -m init

@@ -29,8 +29,11 @@ echo "watch-guard.sh"
 export RECEPTION_PHASE=watch TRIGGER_QUERY='in:#test hasmy::robot_face: after:2026-10-03'
 SEARCH=mcp__claude_ai_Slack__slack_search_public
 expect "exact trigger query is allowed" allow watch-guard.sh "$(ev $SEARCH '{"query":"in:#test hasmy::robot_face: after:2026-10-03"}')"
-expect "a different query is denied" deny watch-guard.sh "$(ev $SEARCH '{"query":"in:#general password"}')"
-expect "query with an extra term is denied" deny watch-guard.sh "$(ev $SEARCH '{"query":"in:#test hasmy::robot_face: after:2026-10-03 OR from:me"}')"
+# A different or mangled query is not denied: it is rewritten to exactly the trigger query (updatedInput).
+pinned() { printf '%s' "$2" | "$KIT/hooks/watch-guard.sh" | jq -e --arg q "$TRIGGER_QUERY" '.hookSpecificOutput.permissionDecision == "allow" and .hookSpecificOutput.updatedInput == {query: $q}' >/dev/null && ok "$1" || bad "$1"; }
+pinned "a different query is replaced by the trigger query" "$(ev $SEARCH '{"query":"in:#general password"}')"
+pinned "a query with an extra term is replaced by the trigger query" "$(ev $SEARCH '{"query":"in:#test hasmy::robot_face: after:2026-10-03 OR from:me"}')"
+pinned "filters/keywords instead of query are replaced too" "$(ev $SEARCH '{"filters":"in:#general","keywords":["token"]}')"
 expect "send while watching is denied" deny watch-guard.sh "$(send_ev "$SIG hi
 $FOOT")"
 expect "read thread while watching is denied" deny watch-guard.sh "$(ev mcp__claude_ai_Slack__slack_read_thread '{}')"

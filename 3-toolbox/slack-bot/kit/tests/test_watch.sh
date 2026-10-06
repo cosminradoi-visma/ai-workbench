@@ -40,7 +40,7 @@ touch "$RX/PAUSED"
 cp "$KIT/tests/fixtures/inbox/fahrenheit-question.md" "$RX/inbox/q3.md"
 tick
 check "PAUSED: tick does nothing" test ! -d "$RX/state/claims/q3"
-check "PAUSED: says paused" grep -q paused "$SB/tick.out"
+check "PAUSED: says stopped, and why" grep -q "stopped: PAUSED" "$SB/tick.out"
 rm -f "$RX/PAUSED"
 tick
 check "unpaused: the waiting message is picked up" test -d "$RX/state/claims/q3"

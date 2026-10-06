@@ -12,6 +12,15 @@ hooks/    watch-guard (exact search only) · witness (raw Slack responses) · sl
 
 Routes: **answer = cite · investigate = no edits · fix = red first · decline = template · escalate = owner only.**
 
+## 0. The workshop setup: your DM with yourself
+
+`./find-self-dm.sh` sends you one Slack message and fills `owner.env`: `OWNER_ID`, `CHANNEL_ID` (your self-DM),
+`SELF_DM=true`, the private search tool, and `MCP_DENY` (your other connectors, removed from the bot's runs).
+In self-DM mode the trigger adds `from:<@you>`, a hit counts only if Slack shows you are the DM's only participant,
+and the script hands the model your workbench notes (`WORKBENCH_DIR`: `NOW.md`, `1-me/profile.md`, `how-i-work.md`,
+`glossary.md`, and `2-work/$WORK_ITEM/state.md`). Outside self-DM, never. Stop switches: `PAUSED` here, or
+`.claude/STOP` in the target repo.
+
 ## 1. Install (once per target repo)
 
 ```sh

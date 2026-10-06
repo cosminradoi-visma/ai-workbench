@@ -55,7 +55,7 @@ EXTRA_LINES=""
 
 # ---------- helpers ----------
 stopped() {
-  if [ -f "$RECEPTION_DIR/PAUSED" ]; then echo PAUSED; return 0; fi
+  if stop_reason; then return 0; fi
   if [ "$CLAIM_SOURCE" = inbox ] && [ -f "$INBOX/$ID.$MUTE" ]; then echo "muted (inbox/$ID.$MUTE)"; return 0; fi
   if [ "$TRANSPORT" = app ] && [ -f "$TDIR/muted" ]; then echo "muted (:$MUTE: in the thread)"; return 0; fi
   return 1
@@ -346,9 +346,12 @@ fi
 LOGS_HINT="no live logs found"
 [ -d "$TARGET_REPO/logs" ] && LOGS_HINT="$TARGET_REPO/logs/ (the running service's logs, read-only)"
 TRIAGE_PROMPT=$(render "$KIT/prompts/triage.md" OWNER_NAME "$OWNER_NAME" ID "$ID" MESSAGE "$MSG" \
-  EXTRA_ROUTES "$EXTRA_ROUTES_TEXT" MEMORY "$MEMORY_TEXT" LOGS "$LOGS_HINT")
+  EXTRA_ROUTES "$EXTRA_ROUTES_TEXT" MEMORY "$MEMORY_TEXT" LOGS "$LOGS_HINT" WORKBENCH "$(workbench_context)")
 # One comma-separated argument per list (patterns contain spaces).
+# The repo's own test commands (TEST_CMD / TEST_ALL_CMD in owner.env), so a non-Python repo can be investigated too.
+READ_TESTS="Bash($TEST_CMD *),Bash($TEST_ALL_CMD)"
 READ_BASH='Bash(date),Bash(date *),Bash(git log *),Bash(git show *),Bash(git diff *),Bash(git blame *),Bash(uv run pytest *),Bash(scripts/status.sh),Bash(scripts/smoke.sh),Bash(tail *),Bash(cat logs/*),Bash(cat $TARGET_REPO/logs/*),Bash(ls *)'
+READ_BASH="$READ_BASH,$READ_TESTS"
 SLACK_READ=""
 [ "$CLAIM_SOURCE" = slack ] && [ "$TRANSPORT" = mcp ] && SLACK_READ=",$SLACK_READ_THREAD_TOOL,$SLACK_REACTIONS_TOOL"
 say "work $ID: triage ($TRIAGE_MODEL) session=$SID"
@@ -388,7 +391,8 @@ if [ "$ROUTE" = answer ] && [ "${_repo_claims:-0}" -gt 0 ]; then   # general ans
   for _ref in $(printf '%s' "$R" | jq -r '.evidence[] | select(.kind != "commit" and .kind != "log") | .ref | gsub(" "; "")'); do
     _p=${_ref%%::*}
     _p=${_p%%:*}
-    if [ -f "$WT/$_p" ]; then
+    # In self-DM mode the owner's workbench notes are valid sources too (the script read them in).
+    if [ -f "$WT/$_p" ] || { [ "$SELF_DM" = true ] && [ -n "${WORKBENCH_DIR:-}" ] && [ -f "$WORKBENCH_DIR/$_p" ]; }; then
       case "$_draft" in *"$_p"* | *"$(basename "$_p")"*) _cited=1 ;; esac
     fi
   done
@@ -416,7 +420,7 @@ case "$ROUTE" in
   fix_pr)
     git -C "$WT" switch -q -c "$BRANCH" 2>/dev/null || git -C "$WT" switch -q "$BRANCH"
     TOOLS="Read,Grep,Glob,Bash,Edit,Write"
-    ALLOWED="Read,Grep,Glob,Edit,Write,Bash(uv run pytest *),Bash(git log *),Bash(git show *),Bash(git diff *),Bash(git status *),Bash(git bisect *),Bash(ls *)"
+    ALLOWED="Read,Grep,Glob,Edit,Write,$READ_TESTS,Bash(uv run pytest *),Bash(git log *),Bash(git show *),Bash(git diff *),Bash(git status *),Bash(git bisect *),Bash(ls *)"
     ;;
   answer) TOOLS="Read,Grep,Glob,Bash,WebSearch"; ALLOWED="Read,Grep,Glob,WebSearch,$READ_BASH" ;;
   *) TOOLS="Read,Grep,Glob"; ALLOWED="Read,Grep,Glob" ;;
