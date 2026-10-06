@@ -37,6 +37,9 @@ import time
 HERE = pathlib.Path(__file__).resolve().parent
 DEFAULT_TOOLS = "Read,Edit,Write,Grep,Glob"
 TIMEOUT = 900  # seconds per task
+# Files a test run creates on its own. Without this, running Python tests creates tests/__pycache__/
+# and a correct solution "edited a protected file".
+CACHE = re.compile(r"(^|/)(__pycache__|\.pytest_cache|\.mypy_cache|\.ruff_cache|node_modules|\.tox|\.venv)(/|$)|\.py[co]$")
 
 
 def parse(path):
@@ -82,6 +85,7 @@ def run_task(root, path, keep):
             result["why"] = f"agent stopped: {out.get('subtype', 'no output')}"
         changed = sh(["git", "status", "--porcelain"], work).stdout.splitlines()
         changed = [line[3:].strip() for line in changed if not line.endswith(".golden-output.txt")]
+        changed = [f for f in changed if not CACHE.search(f)]  # test runs leave caches: not an edit
         protected = [g.strip() for g in meta.get("protect", "").split(",") if g.strip()]
         touched = [f for f in changed if any(fnmatch.fnmatch(f, g) for g in protected)]
         if touched:
