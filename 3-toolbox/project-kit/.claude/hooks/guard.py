@@ -18,6 +18,7 @@ import json
 import os
 import pathlib
 import re
+import subprocess
 import sys
 import time
 
@@ -65,6 +66,17 @@ def ask(reason):
     sys.exit(0)
 
 
+def main_checkout(project):
+    """Bots run in git worktrees. STOP and the post budget live in the MAIN checkout,
+    so stopping the repo stops every worktree, and the budget is per repo, not per thread."""
+    try:
+        common = subprocess.run(["git", "-C", str(project), "rev-parse", "--path-format=absolute", "--git-common-dir"],
+                                capture_output=True, text=True, timeout=3).stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        return project
+    return pathlib.Path(common).parent if common.endswith(".git") else project
+
+
 def unattended(project, tool, args):
     try:
         cfg = json.loads((project / ".claude" / "unattended.json").read_text(encoding="utf-8"))
@@ -78,7 +90,7 @@ def unattended(project, tool, args):
     send = cfg.get("send_tools")
     if send and re.search(send, tool, re.I):
         limit = int(cfg.get("max_sends_per_hour", 10))
-        log = project / ".claude" / "state" / "sends.log"
+        log = main_checkout(project) / ".claude" / "state" / "sends.log"
         now = time.time()
         try:
             recent = [float(t) for t in log.read_text().split() if now - float(t) < 3600]
@@ -98,7 +110,7 @@ def main():
     tool = event.get("tool_name", "")
     args = event.get("tool_input") or {}
     project = pathlib.Path(os.environ.get("CLAUDE_PROJECT_DIR") or event.get("cwd") or ".")
-    if (project / ".claude" / "STOP").exists():
+    if any((p / ".claude" / "STOP").exists() for p in {project, main_checkout(project)}):
         deny("this repo is stopped (.claude/STOP exists). Remove that file to resume")
     unattended(project, tool, args)
 
