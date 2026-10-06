@@ -11,6 +11,7 @@ copies them and fills in the blanks from the repo's real build files. It merges 
 | `.claude/settings.json` | repo | yes | Denies secret files, asks before push/publish, wires both guards |
 | `.claude/hooks/guard.py` | repo | yes | Blocks secrets, force-push, pipe-to-shell, uploads, destructive SQL; asks on installs and agent-config edits |
 | `.claude/hooks/prompt_guard.py` | repo | yes | Stops pasted tokens, keys and real IBANs before they reach the model |
+| `.claude/hooks/no_em_dash.py` | repo | yes | House style: an em-dash in new prose goes back to the agent to rewrite (extend `BANNED` with yours) |
 | `.claude/hooks/py` | repo | yes | Runs the hooks with the first *working* Python 3 (skips Windows' fake `python3`) |
 | `gitattributes` | repo root as `.gitattributes` (merge) | yes | Keeps hooks LF on Windows checkouts, or they silently stop running |
 | `.claude/agents/reviewer.md` | repo | yes | A fresh-eyes, read-only reviewer: "review this" → PASS / CHANGES NEEDED with file:line |

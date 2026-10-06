@@ -1,4 +1,4 @@
-# Workbench — agent instructions
+# Workbench: agent instructions
 
 <!-- Maintainer note: HTML comments are stripped before Claude Code loads this file,
      so notes like this cost no tokens. Keep this file under 60 lines; it loads every

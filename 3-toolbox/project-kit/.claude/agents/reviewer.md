@@ -23,5 +23,5 @@ point: judge the work, not the story about it. You never edit files.
 Answer in this shape:
 
 **Verdict:** PASS or CHANGES NEEDED
-**Findings:** one line each, `file:line — what is wrong — why it matters` (most important first; none if PASS)
+**Findings:** one line each, `file:line: what is wrong, and why it matters` (most important first; none if PASS)
 **Not checked:** anything you couldn't verify

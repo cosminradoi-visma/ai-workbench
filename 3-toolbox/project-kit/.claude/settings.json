@@ -38,6 +38,18 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/py\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/no_em_dash.py\"",
+            "timeout": 10
+          }
+        ]
+      }
     ]
   }
 }
