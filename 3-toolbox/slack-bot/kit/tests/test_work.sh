@@ -12,7 +12,9 @@ new_case() { # fresh sandbox + message
 }
 work() { "$KIT/work.sh" "$ID" >"$SB/work.out" 2>&1; }
 last_run() { tail -1 "$RX/log/runs.jsonl" | jq -r ".$1"; }
-arg_of() { grep -A1 "^arg=$2\$" "$1" | tail -1 | sed 's/^arg=//'; } # value after a flag in a call log
+arg_of() { grep -A1 "^arg=$2\$" "$1" | head -2 | tail -1 | sed 's/^arg=//'; } # value after a flag in a call log
+has_rule() { arg_of "$1" "$2" | tr ',' '\n' | grep -qxF -- "$3"; }   # call flag rule: is rule in that comma list?
+num_is() { awk -v a="$1" -v b="$2" 'BEGIN { exit !((a - b) < 0.00001 && (b - a) < 0.00001) }'; }
 FIX='printf '"'"'[ "$(cat lib/value.txt)" = 3 ]\n'"'"' >tests/test_value.sh; echo 3 >lib/value.txt'
 
 echo "answer"
@@ -34,11 +36,19 @@ SID=$(cat "$RX/state/claims/a1/session")
 check "triage runs with --session-id <pre-assigned uuid>" test "$(arg_of "$T" --session-id)" = "$SID"
 check "act resumes the same session (--resume)" test "$(arg_of "$A" --resume)" = "$SID"
 check "triage has no write tools" test "$(arg_of "$T" --tools)" = "Read,Grep,Glob,Bash,WebSearch"
-check "triage cannot fetch URLs (WebFetch can carry data out)" test "$(arg_of "$T" --disallowedTools)" = "WebFetch"
+check "triage cannot fetch URLs (WebFetch can carry data out)" has_rule "$T" --disallowedTools WebFetch
+check "triage: Edit denied" has_rule "$T" --disallowedTools Edit
+check "triage: Write denied" has_rule "$T" --disallowedTools Write
+check "triage may not run tests (no pytest, no TEST_CMD in its allow list)" sh -c "! grep -A1 '^arg=--allowedTools\$' '$T' | grep -qE 'pytest|Bash\(sh '"
+check "triage may not run scripts/*.sh" sh -c "! grep -A1 '^arg=--allowedTools\$' '$T' | grep -q 'scripts/'"
+check "triage: git --output is denied" has_rule "$T" --disallowedTools 'Bash(git *--output=*)'
+check "triage: no absolute paths, ~ or .. in Bash" has_rule "$T" --disallowedTools 'Bash(* /*)'
+check "every run: --setting-sources project (no personal rules or hooks)" test "$(arg_of "$T" --setting-sources)" = project
 check "answer act gets read tools and web search only" test "$(arg_of "$A" --tools)" = "Read,Grep,Glob,Bash,WebSearch"
 check "runs happen in a worktree, not the owner's checkout" grep -q "^cwd=$TARGET/.worktrees/a1\$" "$T"
 check "inbox lane drops all MCP servers (--strict-mcp-config)" grep -q '^arg=--strict-mcp-config$' "$T"
-check "target settings passed explicitly (--settings)" test "$(arg_of "$T" --settings)" = "$TARGET/.claude/settings.json"
+check "bot settings passed explicitly (--settings bot-settings.json)" test "$(arg_of "$T" --settings)" = "$RX/bot-settings.json"
+check "act runs also get --setting-sources project + bot settings" test "$(arg_of "$A" --setting-sources)/$(arg_of "$A" --settings)" = "project/$RX/bot-settings.json"
 check "act budget = per-thread budget minus triage cost" test "$(arg_of "$A" --max-budget-usd)" = "0.9800"
 check "no em-dashes or en-dashes reach the outbox" sh -c "! grep -q '[—–]' '$RX/outbox/a1.md'"
 check "runs.jsonl: route answer, status sent" test "$(last_run route)/$(last_run status)" = "answer/sent"
@@ -52,6 +62,61 @@ act_json replied "README.md"
 work
 check "the owner's live logs dir is added read-only (--add-dir)" test "$(arg_of "$(calls_with triage)" --add-dir)" = "$TARGET/logs"
 check "triage prompt points at the live logs" grep -q "$TARGET/logs/ (the running service" "$(calls_with triage)"
+
+echo "workbench drawers in the inbox lane (USE_WORKBENCH=true)"
+new_case w1
+cp -R "$KIT/tests/fixtures/workbench" "$SB/wb"
+printf 'WORKBENCH_DIR=%s\nWORK_ITEM=demo\n' "$SB/wb" >>"$OWNER_ENV"
+triage_json answer "README.md:1" "" "README.md"
+act_json replied "README.md"
+work
+T=$(calls_with triage)
+A=$(calls_with act)
+check "inbox lane: triage prompt carries the drawers" grep -q "fixing Bergen" "$T"
+check "drawers in context: triage has no WebSearch tool" sh -c "! grep -A1 '^arg=--tools\$' '$T' | grep -q WebSearch"
+check "drawers in context: WebSearch denied in triage" has_rule "$T" --disallowedTools WebSearch
+check "drawers in context: answer act has no WebSearch either" sh -c "! grep -A1 '^arg=--tools\$' '$A' | grep -q WebSearch"
+check "drawers in context: WebSearch denied in the act" has_rule "$A" --disallowedTools WebSearch
+new_case w2
+cp -R "$KIT/tests/fixtures/workbench" "$SB/wb"
+printf 'WORKBENCH_DIR=%s\nUSE_WORKBENCH=false\n' "$SB/wb" >>"$OWNER_ENV"
+triage_json answer "README.md:1" "" "README.md"
+act_json replied "README.md"
+work
+check "USE_WORKBENCH=false: no drawers in the prompt" sh -c "! grep -q 'fixing Bergen' '$(calls_with triage)'"
+
+echo "investigate may run tests, without write flags"
+new_case i1
+triage_json investigate "lib/value.txt:1" "" "maybe"
+act_json investigated "value is 2"
+work
+A=$(calls_with act)
+check "investigate: the repo's test commands are allowed" sh -c "grep -A1 '^arg=--allowedTools\$' '$A' | grep -qF 'Bash(sh tests/run_all.sh)'"
+check "investigate: pytest --junitxml is denied" has_rule "$A" --disallowedTools 'Bash(*pytest*--junit*)'
+check "investigate: Edit denied" has_rule "$A" --disallowedTools Edit
+
+echo "cost: per-run deltas, per-thread cap"
+new_case k1
+triage_json answer "README.md:1" "" "README.md"
+act_json replied "README.md"   # the fake reports 0.07 for the resumed act: the session's WHOLE total
+work
+check "resumed act charged as a delta: cost_total 0.07, not 0.09" num_is "$(last_run cost_total)" 0.07
+check "per-thread running total kept in state" num_is "$(cat "$RX/state/threads/k1/spent")" 0.07
+check "runs.jsonl: thread cost recorded" num_is "$(last_run cost_thread)" 0.07
+new_case k2
+mkdir -p "$RX/state/threads/k2"
+echo 2.99 >"$RX/state/threads/k2/spent"
+triage_json answer "README.md:1" "" "README.md"
+act_json replied "README.md"
+work
+check "thread over THREAD_BUDGET_USD: no model run" test ! -f "$FAKE_DIR/phases.log"
+check "thread over budget: the owner gets a short note" grep -q "used up its budget" "$RX/outbox/k2.md"
+new_case k3
+mkdir -p "$RX/state/threads/k3"; echo 2.5 >"$RX/state/threads/k3/spent"
+triage_json answer "README.md:1" "" "README.md"
+act_json replied "README.md"
+work
+check "act budget capped by what the thread has left (3 - 2.5 - 0.02)" test "$(arg_of "$(calls_with act)" --max-budget-usd)" = 0.4800
 
 echo "answer that cites nothing real"
 new_case a2
@@ -77,11 +142,21 @@ act_json fixed "value was 2, now 3; tests/test_value.sh proves it" tests/test_va
 echo "$FIX" >"$FAKE_DIR/act.sh"
 work
 check "fix act gets Edit and Write" test "$(arg_of "$(calls_with act)" --tools)" = "Read,Grep,Glob,Bash,Edit,Write"
-check "act cannot fetch, push, commit or call gh" test "$(arg_of "$(calls_with act)" --disallowedTools)" = "WebFetch,Bash(git push *),Bash(git commit *),Bash(gh *)"
+A=$(calls_with act)
+for r in WebFetch WebSearch 'Bash(git push *)' 'Bash(git commit *)' 'Bash(gh *)' 'Bash(git *--output=*)'; do
+  check "fix act: $r denied" has_rule "$A" --disallowedTools "$r"
+done
+FSID=$(cat "$RX/state/claims/f1/session_fix")
+check "fix act runs in a FRESH session (--session-id), not the triage one" test "$(arg_of "$A" --session-id)" = "$FSID" -a "$FSID" != "$(cat "$RX/state/claims/f1/session")"
+check "fix act does not --resume the triage session" sh -c "! grep -qx 'arg=--resume' '$A'"
+check "fix act prompt carries the task message" grep -q "units=fahrenheit\|Fahrenheit" "$A"
+check "fix act gets no MCP servers (--strict-mcp-config)" grep -qx 'arg=--strict-mcp-config' "$A"
+check "fix act: git bisect run only with the test command" sh -c "grep -A1 '^arg=--allowedTools\$' '$A' | grep -qF 'Bash(git bisect run sh tests/*)' && ! grep -A1 '^arg=--allowedTools\$' '$A' | grep -qF 'Bash(git bisect *)'"
 check "PR body drafted in outbox" test -f "$RX/outbox/f1.pr.md"
 check "PR body: red on base, by the script" grep -q "red on base .* exited 1" "$RX/outbox/f1.pr.md"
 check "PR body: green on head" grep -q "green on head .* exited 0" "$RX/outbox/f1.pr.md"
-check "PR footer carries claude --resume <session>" grep -qF "claude --resume $(cat "$RX/state/claims/f1/session")" "$RX/outbox/f1.pr.md"
+check "PR footer carries claude --resume <the fix session>" grep -qF "claude --resume $FSID" "$RX/outbox/f1.pr.md"
+check "ALLOW_PUSH unset: nothing pushed, PR stays in outbox" grep -qF -- "- **PR:** outbox/f1.pr.md" "$RX/outbox/f1.md"
 check "branch agent/f1 has the commit" test "$(git -C "$TARGET" log -1 --format=%s agent/f1)" = "fix: value should be 3"
 check "reply links the PR" grep -qF -- "- **PR:** outbox/f1.pr.md" "$RX/outbox/f1.md"
 check "resume command in backticks" grep -qF -- "- **Resume:** \`claude --resume" "$RX/outbox/f1.md"
@@ -176,6 +251,7 @@ triage_json answer "README.md:1" "" "README.md"
 act_json replied "README.md says it"
 work
 check "one retry on the same session recovers the route" test "$(last_run route)" = answer
+check "the retry is charged too (0.01 + 0.01 delta + act delta 0.05)" num_is "$(last_run cost_total)" 0.07
 check "the retry resumes the triage session" test "$(arg_of "$(grep -l 'did not return the JSON' "$FAKE_DIR"/call-*.log)" --resume)" = "$(cat "$RX/state/claims/r1/session")"
 
 echo "unknown route"
