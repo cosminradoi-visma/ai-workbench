@@ -124,6 +124,26 @@ domains, reads outside the working directories blocked). It needs macOS, or Linu
 `socat`; native Windows has none. Without it (`setup.sh --check` tells you) the bot's commands run unsandboxed and
 the fences above are what you have. Keep `ALLOW_PR=false` unless you are watching.
 
+## On Windows
+
+The kit is shell scripts, so it needs the shell that comes with **Git for Windows** (which Claude Code needs
+anyway). Easiest: open **Git Bash** and run every command in this page exactly as written. In **PowerShell**:
+
+| Linux, macOS, Git Bash | Windows PowerShell |
+|------------------------|--------------------|
+| `sh setup.sh` · `sh setup.sh --repo ~/code/mine` · `sh setup.sh --check` | `& "$env:ProgramFiles\Git\bin\sh.exe" setup.sh` (same flags) |
+| `cd ~/w3` | `cd ~\w3` |
+| `./kit/install.sh` · `./kit/watch.sh --wait` | `& "$env:ProgramFiles\Git\bin\sh.exe" ./kit/install.sh` (same for `watch.sh --wait`) |
+| `echo "Fahrenheit too?" > kit/inbox/q1.md` | `"Fahrenheit too?" \| Set-Content kit\inbox\q1.md` |
+| `cat kit/outbox/q1.md` | `Get-Content kit\outbox\q1.md` |
+| `cat kit/state/threads/<ts>/session` | `Get-Content kit\state\threads\<ts>\session` |
+| `tail -1 kit/log/runs.jsonl \| jq -r .session` | `Get-Content kit\log\runs.jsonl -Tail 1 \| jq -r .session` |
+| `claude --resume <id>` · `claude --from-pr 42` | the same |
+| `touch kit/PAUSED` | `New-Item kit\PAUSED` |
+
+PowerShell 5.1 (the default) has no `&&`: run commands one by one, or join them with `;`.
+[T] The kit has not yet been run end to end on native Windows.
+
 ## Check what it did
 
 Every thread has one session: `claude --resume "$(cat kit/state/threads/<thread-ts>/session)"`, then ask "why?".
@@ -147,7 +167,7 @@ last N days. `owner.env`, `bot-settings.json` and the armed state stay.
 | `weather-api.bundle` | the practice repo with its history (`git clone weather-api.bundle`); six planted bugs, reports in `bugs/` |
 | `weather-api/` | the same repo as files, to browse here (with `.env.example` in place of the bundle's fake `.env`) |
 | `showcase/` | the trainer's demo: `SHOWCASE.md` runbook, messages, a demo workbench, `stage-reset.sh`, `fence-demo.sh` |
-| slides | merged into the one W3 deck on the companion app (workshop.cosmohub.ro → Deck), so the polls, quiz and trainer scripts follow it |
+| slides | Bogdan presents the bot from his own laptop and deck; they are not in this repo |
 
 Practise without Slack: `SOURCE=inbox` in `kit/owner.env`, drop a message file into `kit/inbox/`, read `kit/outbox/`.
 Your drawers are used there too. That is also the lane for Codex and Copilot users (no Slack connector there).
