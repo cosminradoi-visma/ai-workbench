@@ -1,0 +1,4 @@
+# Keep LF line endings on every platform: Windows checkouts with core.autocrlf=true would
+# otherwise write CRLF, and sh scripts with \r fail ("bad interpreter", "\r: command not found").
+* text=auto eol=lf
+*.sh text eol=lf

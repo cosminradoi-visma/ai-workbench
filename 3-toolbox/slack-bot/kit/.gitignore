@@ -1,0 +1,8 @@
+owner.env
+/inbox/
+/outbox/
+/state/
+/log/
+PAUSED
+__pycache__/
+bot-settings.json

@@ -1,0 +1,84 @@
+{
+  "type": "object",
+  "properties": {
+    "route": {
+      "type": "string",
+      "enum": [
+        "answer",
+        "investigate",
+        "fix_pr",
+        "decline",
+        "escalate"
+      ]
+    },
+    "reason": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "task_summary": {
+      "type": "string",
+      "maxLength": 400,
+      "description": "The task in one or two plain sentences, for a fresh session that will not see this conversation. Nothing from the workbench notes or the thread memory."
+    },
+    "confidence": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "file",
+              "test",
+              "log",
+              "doc",
+              "commit",
+              "general"
+            ]
+          },
+          "ref": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "ref"
+        ]
+      }
+    },
+    "draft_reply": {
+      "type": "string",
+      "maxLength": 1200
+    },
+    "failing_test": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "open_questions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "route",
+    "reason",
+    "task_summary",
+    "confidence",
+    "evidence",
+    "draft_reply",
+    "failing_test",
+    "open_questions"
+  ]
+}

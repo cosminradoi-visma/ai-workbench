@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Forecast</title>
+  <style>
+    body { font: 16px/1.5 system-ui, sans-serif; margin: 0; background: #f4f6f8; color: #1d2733; }
+    main { max-width: 640px; margin: 0 auto; padding: 24px 16px; }
+    h1 { font-size: 28px; margin: 0 0 16px; }
+    form { display: flex; gap: 8px; margin-bottom: 16px; }
+    select { font: inherit; padding: 6px 8px; }
+    ol { list-style: none; padding: 0; margin: 0; }
+    li { background: #fff; border-radius: 8px; padding: 12px 14px; margin-bottom: 8px; }
+    .date { font-weight: 600; }
+    .advice { color: #5a6b7d; font-style: italic; }
+  </style>
+</head>
+<body>
+<main id="app">
+  <h1 id="title"></h1>
+  <form id="controls">
+    <select id="city" aria-label="city"></select>
+    <select id="units" aria-label="units">
+      <option value="celsius">°C</option>
+      <option value="fahrenheit">°F</option>
+    </select>
+  </form>
+  <ol id="days"></ol>
+</main>
+<script>
+const STRINGS = {
+  en: { title: "Forecast", max: "max", min: "min", rain: "mm rain" },
+  nb: { title: "Værvarsel", max: "maks", min: "min", rain: "mm nedbør" },
+};
+const lang = (navigator.language || "en").slice(0, 2);
+const t = STRINGS[lang];
+
+async function load() {
+  const city = document.getElementById("city").value;
+  const units = document.getElementById("units").value;
+  const res = await fetch(`/forecast?city=${encodeURIComponent(city)}&units=${units}`);
+  const data = await res.json();
+  const sym = units === "fahrenheit" ? "°F" : "°C";
+  document.getElementById("days").innerHTML = data.days.map((d) =>
+    `<li><span class="date">${d.date}</span> ${d.condition}, ` +
+    `${t.max} ${d.max_temp}${sym} / ${t.min} ${d.min_temp}${sym}, ` +
+    `${d.precipitation_mm} ${t.rain}. <span class="advice">${d.advice}</span></li>`
+  ).join("");
+}
+
+async function init() {
+  document.title = t.title;
+  document.getElementById("title").textContent = t.title;
+  const { cities } = await (await fetch("/cities")).json();
+  document.getElementById("city").innerHTML = cities.map((c) => `<option>${c}</option>`).join("");
+  document.getElementById("city").addEventListener("change", load);
+  document.getElementById("units").addEventListener("change", load);
+  await load();
+}
+
+init();
+</script>
+</body>
+</html>

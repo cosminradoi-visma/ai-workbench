@@ -8,17 +8,22 @@
 
 <!-- One sentence: what it does and who depends on it. -->
 
-## Commands
+## Operate
 
-- Setup: `<!-- -->`
-- Run: `<!-- -->`
-- Test: `<!-- -->`
+<!-- How to run, check and debug this repo, one line each. Agents (and the W3 bot) read this
+     section first, so keep the heading exactly "## Operate". Model: the weather-api practice repo. -->
+
+- Install: `<!-- -->`
+- Start / stop / status: `<!-- -->`
+- Smoke: `<!-- one command, one line of output, exit 0 or 1 -->`
+- Tests: `<!-- -->` · One area: `<!-- -->`
+- Proving a change works: <!-- the check that actually catches regressions, e.g. "integration tests
+  against the compose DB; unit tests mock the DB and miss SQL bugs" -->
+- Logs: `<!-- where, and what one line looks like -->`
 - Lint/format: `<!-- -->` (a hook runs this; you don't need to)
 
-## Proving a change works
-
-<!-- The check that actually catches regressions here, e.g. "integration tests against
-     the compose DB; unit tests mock the DB and miss SQL bugs". -->
+Never touch:
+- <!-- e.g. `.env`, `.claude/`, generated/, main directly -->
 
 ## Non-obvious conventions
 
@@ -28,10 +33,6 @@
 ## Ask before
 
 <!-- e.g. changing a public API, a DB migration, CI config, adding a dependency. -->
-
-## Never
-
-<!-- e.g. edit generated/, commit to main, use real customer data in tests. -->
 
 ## Gotchas
 

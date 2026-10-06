@@ -1,0 +1,15 @@
+{
+  "type": "object",
+  "properties": {
+    "verdict": {
+      "type": "string",
+      "enum": ["replied", "investigated", "fixed", "declined", "escalated", "blocked", "posted", "failed"]
+    },
+    "reply": { "type": "string", "maxLength": 1200 },
+    "failing_test": { "type": ["string", "null"] },
+    "pr_title": { "type": ["string", "null"], "maxLength": 72 },
+    "pr_body": { "type": ["string", "null"], "maxLength": 4000 },
+    "notes": { "type": "string", "maxLength": 600 }
+  },
+  "required": ["verdict", "reply", "failing_test", "pr_title", "pr_body", "notes"]
+}

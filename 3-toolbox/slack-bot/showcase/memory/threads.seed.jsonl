@@ -1,0 +1,2 @@
+{"ts":"2026-09-29T13:40:00Z","id":"1759153200.004100","route":"investigate","summary":"Bergen temperatures upside down from 8 Oct: long-range days have max_temp below min_temp. Suspect the met.no parser path in src/weather_api/sources.py (parse_metno). No fix yet, waiting for a second report.","pr":null}
+{"ts":"2026-10-01T08:15:00Z","id":"1759306500.000700","route":"escalate","summary":"Asked to expose /metrics on the public load balancer. Production access, handed to Bogdan.","pr":null}
