@@ -54,7 +54,8 @@ Sources: [`0-meta/decisions/research.md`](0-meta/decisions/research.md).
 3. **Connect your main repo:** from the workbench, run `/kb-link-repo` and give it the repo path.
 4. **End your next working session with "capture".** That's the habit that makes it work.
 
-Needs: Claude Code, git, Python 3.8+ (for the hooks and the check). On Windows: WSL, or Git for Windows plus
+Needs: Claude Code, git, the `gh` CLI logged in (`gh auth status`) or the web "Use this template" button, Python 3.8+
+(for the hooks and the check; macOS: `xcode-select --install` or python.org). On Windows: WSL, or Git for Windows plus
 Python from python.org. The Microsoft Store `python3` stub doesn't count; the launcher skips it.
 Copilot, Cursor and Codex read `AGENTS.md`, so the KB works there too. The skills and hooks are Claude Code's.
 
@@ -101,7 +102,8 @@ and a way out in one session. The full page is [`3-toolbox/safety.md`](3-toolbox
 
 ## Keep it healthy
 
-`python3 0-meta/scripts/kb_check.py` reports boot cost, broken links, stale or oversized pages,
+`python3 0-meta/scripts/kb_check.py` (Windows: `py 0-meta/scripts/kb_check.py`; anywhere:
+`sh 3-toolbox/project-kit/.claude/hooks/py 0-meta/scripts/kb_check.py`) reports boot cost, broken links, stale or oversized pages,
 missing indexes, likely secrets and hidden Unicode. It runs at every session start and prints only problems.
 
 ## Where it came from

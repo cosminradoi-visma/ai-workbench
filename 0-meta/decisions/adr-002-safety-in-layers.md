@@ -19,7 +19,7 @@ Must-hold rules are enforced in layers that don't depend on the model agreeing:
    bypass mode disabled.
 2. **Sandbox** (optional strict profile): the real boundary for Bash. Deny rules only match command text.
 3. **Hooks:** a `PreToolUse` guard and a `UserPromptSubmit` guard that stop secrets and
-   real IBANs at the door.
+   real IBANs and CNPs at the door.
 4. **Review:** a human reads every diff before it merges. You own what you merge.
 
 Prose in `safety.md` explains *why*, so people make good calls where no rule reaches.

@@ -17,7 +17,7 @@ routine work, bug fixes, or anything with one sensible option.
 ## Steps
 
 1. Folder: `2-work/<item>/decisions/` (KB-wide: `0-meta/decisions/`). Next number = highest + 1.
-2. Write `adr-NNN-<slug>.md` from `0-meta/templates/work-item/decisions/adr-template.md`:
+2. Write `adr-NNN-<slug>.md` from `0-meta/templates/adr.md`:
    context, decision (followable, no code or file paths), why, rejected alternatives with
    reasons, consequences, and a **Source** line (PR, issue, doc, conversation).
 3. Status **Proposed** unless the user says it's decided (then **Accepted**). If it replaces an

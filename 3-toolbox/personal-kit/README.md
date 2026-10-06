@@ -13,6 +13,8 @@ diff, and asks first. To do it by hand, copy the pieces you want.
 | `py` | `~/.claude/py` | Runs it with the first working Python 3 (skips Windows' fake `python3`) |
 
 Notes:
+- `~/.claude/CLAUDE.md` imports your profile from outside each repo, so the first session in a repo asks to approve it.
+  Say yes; "No" silently drops your profile there.
 - The kit assumes your workbench is at `~/workbench`. `kb-setup` fixes the path if it isn't.
 - Your company may push **managed settings** that override these. That's expected, and those win.
 - `auto` permission mode is left alone. Whether to use it is a company policy call.

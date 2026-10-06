@@ -5,8 +5,8 @@ How to write and file pages. Agents need this to **write** here, not to read.
 ## The seven drawers, and where they live
 
 Identity → `1-me/` · Memory → `NOW.md`, `2-work/*/state.md` + `log.md`, `1-me/learnings.md` · Rules → each repo's
-`AGENTS.md` + `.claude/rules/` · Skills → `.claude/skills/` · Reach → `3-toolbox/mcp.md` + repo `.mcp.json` ·
-Guards → settings, hooks, `3-toolbox/safety.md` · Checks → repo tests, `.claude/golden/`, the `reviewer` agent.
+`AGENTS.md` + `.claude/rules/` · Skills → `.claude/skills/` · Reach → MCP per repo (`.mcp.json`) or a CLI, register in `3-toolbox/mcp.md` ·
+Guards → permissions, hooks, sandbox, `3-toolbox/safety.md` · Checks → repo tests, `.claude/golden/`, the `reviewer` agent.
 When you add something, put it in its drawer. `kb_check.py --report` shows which drawers are empty.
 
 ## The layers
