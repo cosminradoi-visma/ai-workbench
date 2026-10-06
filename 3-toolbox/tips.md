@@ -62,9 +62,10 @@ equivalents for other tools are at the end.
 22. **Cheap subagents:** send log-reading and test-running to a subagent on `haiku`.
     Only the summary comes back.
 23. **Don't switch model or effort mid-task.** Each switch starts a cold cache. Pick at the start.
-24. **Headless for CI and scripts:** `claude -p "…" --bare --output-format json --max-turns 5
-    --allowedTools "Read,Grep"`. `--bare` skips hooks, skills, MCP and CLAUDE.md, which is
-    what you want on untrusted input. The JSON includes `total_cost_usd`.
+24. **Headless for CI and scripts:** `claude -p "…" --output-format json --max-turns 5 --allowedTools "Read,Grep"`
+    `--setting-sources project`. The JSON includes `total_cost_usd`. `--bare` (skips hooks, MCP and CLAUDE.md
+    discovery) only works with an `ANTHROPIC_API_KEY`: it ignores a claude.ai login, so on a company subscription
+    use `--setting-sources project --strict-mcp-config` to shut out your personal config instead.
 25. **Tell it to edit CLAUDE.md.** The old `#` shortcut is gone; "add to CLAUDE.md: …" does the same.
 
 ## Is it any good, and is it worth it?
@@ -82,7 +83,7 @@ equivalents for other tools are at the end.
 
 30. **Unattended needs fences, not trust:** see the fence table in `safety.md` (owner-only start, anyone can stop,
     private half unreadable, post budget, turn and cost cap, claim before work, signed replies, golden tasks that must decline).
-    **Headless needs a fence:** `--bare` (ignore repo config), `--max-turns`, an `--allowedTools`
+    **Headless needs a fence:** `--setting-sources project` (or `--bare` with an API key), `--max-turns`, an `--allowedTools`
     allowlist, a token with the least scope, and output that a human or a test checks before anything merges.
 31. **Never `bypassPermissions` outside a throwaway container.** In CI the container is the boundary.
 32. **Share a team's skills and hooks by committing them** (`.claude/` in the repo). For many repos, a plugin marketplace.

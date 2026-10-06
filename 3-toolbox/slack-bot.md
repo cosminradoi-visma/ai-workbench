@@ -44,7 +44,7 @@ cd ~/w3
 Then in Slack, in your DM with yourself: write a question, react 🤖, tick again (or keep it running:
 `while :; do ./kit/watch.sh; sleep 60; done`). Within a minute or two: 👀, one signed reply, ✅.
 
-Needs: Claude Code v2.1.259 or later, the Slack connector connected in `/mcp`, `git`, `jq`, and `uv` for weather-api.
+Needs: Claude Code v2.1.259 or later, the Slack connector connected in `/mcp` (only for the Slack lane), `git`, `jq`, `python3`, and `uv` for weather-api. Check all of it with `sh slack-bot/setup.sh --check`.
 `setup.sh` fills `OWNER_NAME` and `SIGNATURE` ("🤖 <name>'s agent:") from `git config user.name`.
 Workshop defaults in `kit/owner.env`: `WORK_MODEL=sonnet`, `WORK_BUDGET_USD=1` per message, `THREAD_BUDGET_USD=3`
 per thread, `MAX_WORKERS=2`, `ALLOW_PR=false`, `ALLOW_PUSH=false`. Your own repo: set `TEST_CMD` / `TEST_ALL_CMD`
@@ -106,13 +106,13 @@ leg back in full, so it never gets the drawers. It is not part of the lab.
 | Only you start it | the pinned `hasmy::` search, plus the participants check in self-DM |
 | Anyone can stop it, even mid-run | 🔕 on the thread (checked before every post), `touch kit/PAUSED`, or `touch .claude/STOP` in the repo (the same file `guard.py` uses). A hook on **every tool call** (`hooks/stop-guard.sh`) checks both files, also from inside a worktree, so a run stops at its next step |
 | Not your personal setup | every bot `claude -p` run uses `--setting-sources project`: your own allow rules and hooks in `~/.claude` do not apply |
-| What it may read | `bot-settings.json` (written by `install.sh`, real paths): `blockReadsOutsideWorkingDirectories`, denies on `WORKBENCH_DIR`, `~/.claude`, `~/.ssh`, `~/.aws`, `~/.azure`, `~/.kube`, `~/.config`, `owner.env`; in the repo `.env*`, `*secret*`, `.claude/**`. On a repo linked with `kb-link-repo`, `guard.py` adds `private_paths` and the post budget from `unattended.json` |
+| What it may read | `bot-settings.json` (written by `install.sh`, real paths): `blockReadsOutsideWorkingDirectories`, read denies on `WORKBENCH_DIR`, `~/.claude` (also the bot's own transcripts), `~/.ssh`, `~/.aws`, `~/.azure`, `~/.kube`, `~/.config`, `owner.env`; in the repo `.env*`, `*secret*`, `.claude/**`. On a repo linked with `kb-link-repo`, `guard.py` adds `private_paths` and the post budget from `unattended.json` |
 | What it may write | triage and answer: nothing. Investigate: nothing (it runs tests). Fix: files in its worktree. `git --output` and `--ext-diff` are denied everywhere; `git commit`, `git push`, `gh` by the model are denied |
 | What a post may say | a PreToolUse hook on every Slack tool (send, schedule, DM, canvas): this DM, the claimed thread (`thread_ts` and `message_ts`), no `reply_broadcast`, exactly the reply the script approved (no approved reply = no send), signed, no mentions except you, no secrets (token shapes, AWS keys, Slack webhooks, JWTs, values from the repo's `.env`), no promises. Hooks fail closed: a deny is exit 2, and no `jq` means deny |
 | Edited after you reacted | inbox lane: declined by the script. Slack MCP lane: **prompt-only**, triage is told to decline an edited task, nothing checks it in code. React again after an edit |
 | Only Slack loads | `MCP_DENY` (written by `find-self-dm.sh`) removes your other connectors from the bot's runs; act runs load no connector at all |
 | Money | `--max-budget-usd` on every run from what is left: `WORK_BUDGET_USD` per message and `THREAD_BUDGET_USD` per thread, retries, posts and reactions included. A resumed session reports its whole total, so the script charges per-run deltas |
-| Tested before trusted | `install.sh` arms the bot only if a Haiku run with exactly these settings is denied every canary: Read and `cat` of a secret in the repo, Read and `cat` of a file in your workbench, and `git log --output=<file>` |
+| Tested before trusted | `install.sh` arms the bot only if a Haiku run with exactly these settings is denied every canary: Read and `cat` of two secrets in the repo (six probes in all with the next ones), Read and `cat` of a file in your workbench, a token file outside the repo, and `git log --output=<file>` |
 
 ### The fix route executes code
 

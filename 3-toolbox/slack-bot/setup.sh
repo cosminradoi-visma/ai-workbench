@@ -98,7 +98,7 @@ if [ -z "$REPO" ]; then
 else
   TARGET=$(cd "$REPO" && pwd)
   [ -d "$TARGET/.git" ] || { echo "$TARGET is not a git repo" >&2; exit 1; }
-  [ -f "$TARGET/AGENTS.md" ] || echo "note: $TARGET has no AGENTS.md. Run /kb-link-repo from your workbench first (Cosmin's part)."
+  [ -f "$TARGET/AGENTS.md" ] || echo "note: $TARGET has no AGENTS.md. Run /kb-link-repo from your workbench first (part 1)."
   grep -q '^## Operate' "$TARGET/AGENTS.md" 2>/dev/null || echo "note: AGENTS.md has no '## Operate' section. Ask your agent to write one, like weather-api's."
   echo "your repo: $TARGET. Set TEST_CMD / TEST_ALL_CMD in kit/owner.env if it does not use 'uv run pytest'."
 fi

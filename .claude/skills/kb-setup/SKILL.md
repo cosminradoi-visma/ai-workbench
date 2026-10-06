@@ -1,6 +1,6 @@
 ---
 name: kb-setup
-description: First-run setup of this workbench KB. A 10-minute interview that fills 1-me/, NOW.md and the first work item, then offers safe personal defaults for ~/.claude. Use when the user says "run kb-setup" or "set up my KB".
+description: First-run setup of this workbench KB. A 10-minute interview that fills 1-me/, NOW.md and the first work item, then offers safe personal defaults for ~/.claude. Run it by typing /kb-setup.
 disable-model-invocation: true
 ---
 
@@ -11,7 +11,7 @@ time. Don't lecture. Show what you wrote after each step.
 
 ## 0. Where am I
 
-Confirm the KB path (`pwd`). If it isn't `~/workbench`, note the real path: steps 5–6 use it.
+Confirm the KB path (`pwd`). If it isn't `~/workbench`, note the real path: step 5 uses it.
 
 ## 1. Profile (3–4 questions)
 

@@ -457,7 +457,7 @@ if [ "$ROUTE" = answer ] && [ "${_repo_claims:-0}" -gt 0 ]; then   # general ans
     _p=${_ref%%::*}
     _p=${_p%%:*}
     # In self-DM mode the owner's workbench notes are valid sources too (the script read them in).
-    if [ -f "$WT/$_p" ] || { [ "$SELF_DM" = true ] && [ -n "${WORKBENCH_DIR:-}" ] && [ -f "$WORKBENCH_DIR/$_p" ]; }; then
+    if [ -f "$WT/$_p" ] || { drawers_allowed "$CLAIM_SOURCE" && [ -n "${WORKBENCH_DIR:-}" ] && [ -f "$WORKBENCH_DIR/$_p" ]; }; then
       case "$_draft" in *"$_p"* | *"$(basename "$_p")"*) _cited=1 ;; esac
     fi
   done

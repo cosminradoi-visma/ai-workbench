@@ -146,9 +146,13 @@ is_armed() {
   [ -f "$STATE/armed" ] && _s=$(arm_sum) && [ "$(cat "$STATE/armed")" = "$_s" ]
 }
 
+# nl_unescape [FILE]: turn literal \\n and \n escapes into newlines. awk, not sed: BSD sed (macOS)
+# writes a plain "n" for \n in a replacement, so the witness parsers would see no hits on a Mac.
+nl_unescape() { awk '{ gsub(/\\\\n/, "\n"); gsub(/\\n/, "\n"); print }' "$@"; }
+
 # hits_from_witness FILE: the ts of every RESULT in Slack's raw search response (unindented "Message_ts:"
 # lines; the indented ones are context). The script takes the hits from here, not from the model's list.
-hits_from_witness() { sed -e 's/\\\\n/\n/g' -e 's/\\n/\n/g' "$1" 2>/dev/null | awk '/^Message_ts: / { print $2 }'; }
+hits_from_witness() { nl_unescape "$1" 2>/dev/null | awk '/^Message_ts: / { print $2 }'; }
 
 # witnessed TS FILE: did Slack's raw search response (saved by hooks/witness.sh) return TS as a RESULT?
 # Real connector format (tested 5 Oct): each hit has an unindented "Message_ts: <ts>" line; the
@@ -156,7 +160,7 @@ hits_from_witness() { sed -e 's/\\\\n/\n/g' -e 's/\\n/\n/g' "$1" 2>/dev/null | a
 # model cannot nominate a neighbouring message nobody reacted to. The JSON form is the local fake's.
 witnessed() {
   [ -f "$2" ] || return 1
-  sed -e 's/\\\\n/\n/g' -e 's/\\n/\n/g' "$2" | grep -qxF "Message_ts: $1" && return 0
+  nl_unescape "$2" | grep -qxF "Message_ts: $1" && return 0
   sed 's/\\"/"/g' "$2" | grep -qF "\"ts\": \"$1\""   # the fake's JSON, raw or wrapped in {"result": "..."}
 }
 
@@ -164,7 +168,7 @@ witnessed() {
 # (".../p<ts>?thread_ts=<first>&..."). A message that is not in a thread is its own thread. The script
 # decides this from Slack's raw response, never the model.
 thread_of() {
-  _t=$(sed -e 's/\\\\n/\n/g' -e 's/\\n/\n/g' "$2" 2>/dev/null | awk -v ts="$1" '
+  _t=$(nl_unescape "$2" 2>/dev/null | awk -v ts="$1" '
     /^Message_ts: / { inres = ($2 == ts); next }
     inres && /^Permalink:/ { if (match($0, /thread_ts=[0-9]+\.[0-9]+/)) print substr($0, RSTART + 10, RLENGTH - 10); exit }
     /^---/ { inres = 0 }')
@@ -192,7 +196,7 @@ trigger_query() {
 # self_dm_ok TS FILE: in Slack's raw search response, the RESULT for TS is in a conversation whose only
 # participant is the owner, and the owner wrote it. The script checks this, never the model.
 self_dm_ok() {
-  sed -e 's/\\\\n/\n/g' -e 's/\\n/\n/g' "$2" 2>/dev/null | awk -v ts="$1" -v owner="$OWNER_ID" '
+  nl_unescape "$2" 2>/dev/null | awk -v ts="$1" -v owner="$OWNER_ID" '
     /^### Result/ { parts = ""; from = "" }
     /^Participants:/ { parts = $0 }
     /^From:/ { from = $0 }

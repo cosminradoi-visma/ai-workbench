@@ -1,0 +1,5 @@
+<!-- Personal, gitignored: your link from this repo to your workbench KB.
+     kb-link-repo fills in the path. Add CLAUDE.local.md to .gitignore. -->
+@~/workbench/2-work/<item>/state.md
+
+When you finish meaningful work here, offer to run kb-capture for `<item>`.

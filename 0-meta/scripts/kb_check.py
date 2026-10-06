@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Workbench health check. Standard library only, Python 3.9+.
+"""Workbench health check. Standard library only, Python 3.8+.
 
     python3 0-meta/scripts/kb_check.py           full report
     python3 0-meta/scripts/kb_check.py --brief   problems only, max 8 lines (the session-start hook)
@@ -125,7 +125,7 @@ def report(cfg):
     ok = fresh(ROOT / "NOW.md", days) and bool(current)
     rows.append(("Memory", ok, f"NOW.md {'current' if fresh(ROOT / 'NOW.md', days) else 'stale or undated'} · {len(current)}/{len(items)} items current", "kb-capture"))
 
-    ruled = [r for r in repos if (r / "AGENTS.md").exists() or (r / "CLAUDE.md").exists()]
+    ruled = [r for r in repos if (r / "AGENTS.md").exists()]
     rows.append(("Rules", bool(ruled), f"{len(ruled)} linked repo(s) with AGENTS.md", "/kb-link-repo"))
 
     own = {p.parent.name for base in [user / "skills", *[r / ".claude" / "skills" for r in repos]]
@@ -143,7 +143,7 @@ def report(cfg):
     guarded = [r for r in repos if (r / ".claude" / "hooks" / "guard.py").exists()]
     rows.append(("Guards", personal and bool(guarded), f"personal kit {'on' if personal else 'off'} · {len(guarded)} repo(s) guarded", "/kb-link-repo + personal kit"))
 
-    golden = [p for r in repos for p in (r / ".claude" / "golden").glob("*.md") if p.stem not in ("README", "example")]
+    golden = [p for r in repos for p in (r / ".claude" / "golden").glob("*.md") if p.stem != "README" and not p.stem.startswith("example")]
     reviewer = [r for r in repos if (r / ".claude" / "agents" / "reviewer.md").exists()]
     rows.append(("Checks", bool(golden or reviewer), f"{len(golden)} golden task(s) · reviewer in {len(reviewer)} repo(s)", ".claude/golden/ + reviewer agent"))
 

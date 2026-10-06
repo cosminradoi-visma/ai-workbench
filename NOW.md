@@ -11,7 +11,7 @@ updated: YYYY-MM-DD
 
 | Item | Where it stands | Next |
 |------|-----------------|------|
-| [_example-orders-api](2-work/_example-orders-api/state.md) | Example. Delete when you add your own | Run `kb-setup` |
+| [_example-orders-api](2-work/_example-orders-api/state.md) | Example. Delete when you add your own | Type `/kb-setup` |
 
 ## This week
 
