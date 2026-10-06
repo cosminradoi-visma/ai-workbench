@@ -11,7 +11,7 @@ You write to yourself in Slack, react 🤖, and your bot answers in the thread, 
 `weather-api` practice repo or on your own repo.
 
 No Slack app and no bot token to get approved: it runs on your laptop through the **Slack MCP connector**
-(`/mcp` shows `claude.ai Slack`), with your own login. Code, slides and the trainer's demo: [`slack-bot/`](slack-bot/).
+(`/mcp` shows `claude.ai Slack`), with your own login. Code and the trainer's demo: [`slack-bot/`](slack-bot/).
 
 **Never paste customer data, payroll or personal data into your DM for the bot.** Practise on weather-api's bug
 reports, your own code questions and your own notes.
@@ -147,7 +147,7 @@ last N days. `owner.env`, `bot-settings.json` and the armed state stay.
 | `weather-api.bundle` | the practice repo with its history (`git clone weather-api.bundle`); six planted bugs, reports in `bugs/` |
 | `weather-api/` | the same repo as files, to browse here (with `.env.example` in place of the bundle's fake `.env`) |
 | `showcase/` | the trainer's demo: `SHOWCASE.md` runbook, messages, a demo workbench, `stage-reset.sh`, `fence-demo.sh` |
-| `slides/w3-part2.html` | the slides for part 2 (open in a browser; Guide mode has the speaker notes) |
+| slides | merged into the one W3 deck on the companion app (workshop.cosmohub.ro → Deck), so the polls, quiz and trainer scripts follow it |
 
 Practise without Slack: `SOURCE=inbox` in `kit/owner.env`, drop a message file into `kit/inbox/`, read `kit/outbox/`.
 Your drawers are used there too. That is also the lane for Codex and Copilot users (no Slack connector there).
