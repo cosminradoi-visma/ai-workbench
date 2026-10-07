@@ -25,4 +25,4 @@ The map: every page worth opening, one line each, grouped by what it answers. Op
 
 ## Toolbox and meta
 
-- [safety](3-toolbox/safety.md) · [tips](3-toolbox/tips.md) · [toolbox index](3-toolbox/README.md) · [conventions](0-meta/conventions.md) · [templates](0-meta/templates/README.md)
+- [playground: try to make it leak](3-toolbox/playground/TRY.md) · [safety](3-toolbox/safety.md) · [tips](3-toolbox/tips.md) · [toolbox index](3-toolbox/README.md) · [conventions](0-meta/conventions.md) · [templates](0-meta/templates/README.md)
