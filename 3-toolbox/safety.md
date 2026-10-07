@@ -78,10 +78,10 @@ The trifecta is always present: messages are untrusted, the send tool is a way o
 | Fence | How |
 |-------|-----|
 | **Only the owner starts it** | The bot's config names the owner (`kit/owner.env` → `OWNER_ID`); the trigger only matches the owner's own reaction |
-| **Anyone can stop it** | `touch .claude/STOP` blocks every tool call (`guard.py`); add a chat signal too (a reaction) |
-| **It answers from the repo half only** | `.claude/unattended.json` → `private_paths`: the guard refuses any call that *names* your `1-me/`, `NOW.md`, `2-work/` (a text match: a speed bump). The wall is the bot's read denies (`bot-settings.json`) and the sandbox. Never give a bot repo a `CLAUDE.local.md` that imports your workbench |
+| **Anyone can stop it** | a stop signal the bot checks before every step (a reaction, a pause file in its own folder), and Ctrl-C |
+| **It answers from the repo half only** | deny rules in that repo's `.claude/settings.json`: `Read(~/workbench/1-me/**)`, `Read(~/workbench/2-work/**)`, `Read(~/workbench/4-know/**)`, `Read(~/workbench/NOW.md)`; the sandbox is the wall for Bash. Never give a bot repo a `CLAUDE.local.md` that imports your workbench |
 | **One exception: a bot in your DM with yourself** | Nobody else can post there, so the untrusted-content leg is **reduced, not gone**: forwards, link previews, pasted text and apps posting as you still bring other people's words in. The exception holds because the **way out is closed**: the model can't read the workbench (the script hands it the drawers), it gets no web tools while the drawers are in context, and replies go only to that DM. Never paste customer data, payroll or personal data into it. See `slack-bot.md` |
-| **A post budget** | `unattended.json` → `send_tools` + `max_sends_per_hour`: the guard refuses past the limit |
+| **A post budget** | in the bot's own config; Claude Code's `--max-turns` caps each run |
 | **A turn and cost cap per run** | `claude -p --max-turns N`; read `total_cost_usd` from the JSON and stop the loop above your budget |
 | **It never answers twice** | claim each message before working on it (a claim file or a reaction); keep that state in the bot's repo, gitignored |
 | **Every reply says it's a bot** | a fixed signature line; humans must know who they're talking to |

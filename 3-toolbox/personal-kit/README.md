@@ -7,10 +7,8 @@ diff, and asks first. To do it by hand, copy the pieces you want.
 | File | Goes to | Does |
 |------|---------|------|
 | `CLAUDE.md` | `~/.claude/CLAUDE.md` (merge) | Loads your profile everywhere, and tells agents where your workbench is |
-| `settings.json` | `~/.claude/settings.json` (merge) | Disables bypass mode; denies reads of cloud credentials, SSH keys and `.env`; asks before push; keeps transcripts 14 days; turns off feedback uploads; adds the status line |
+| `settings.json` | `~/.claude/settings.json` (merge) | Disables bypass mode; denies reads of cloud credentials, SSH keys and `.env`; asks before push; keeps transcripts 14 days; turns off feedback uploads |
 | `settings.strict.json` | merge too, if you want the wall | Sandbox for Bash: package registries only on the network, no reads of credential folders. Linux/WSL needs `bubblewrap` and `socat`; check with `/sandbox` |
-| `statusline.py` + `statusline.pl` | `~/.claude/` (both) | Shows model, context % (with `!` past 60%) and cost. The `.pl` twin runs where there is no Python |
-| `py` | `~/.claude/py` | Runs it on the first working Python 3 (skips the Windows Store and macOS stubs), else on Perl, which comes with git |
 
 Notes:
 - `~/.claude/CLAUDE.md` imports your profile from outside each repo, so the first session in a repo asks to approve it.

@@ -2,51 +2,65 @@
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "deny": [
-      "Read(./.env)",
-      "Read(./.env.local)",
-      "Read(./.env.*.local)",
-      "Read(./**/*.pem)",
-      "Read(./**/*.key)",
-      "Read(./secrets/**)"
+      "Read(**/.env)",
+      "Read(**/.env.local)",
+      "Read(**/.env.*.local)",
+      "Read(**/.env.production)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/*.pfx)",
+      "Read(**/id_rsa*)",
+      "Read(**/id_ed25519*)",
+      "Read(**/credentials.json)",
+      "Read(**/secrets/**)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.kube/**)",
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(git commit * --no-verify*)",
+      "Bash(git push * --no-verify*)",
+      "Bash(rm -rf /*)",
+      "Bash(rm -rf ~*)"
     ],
     "ask": [
       "Bash(git push *)",
+      "Bash(npm install *)",
+      "Bash(npm i *)",
+      "Bash(pip install *)",
+      "Bash(dotnet add *)",
+      "Bash(sudo *)",
+      "Bash(curl *)",
+      "Bash(wget *)",
       "Bash(npm publish *)",
-      "Bash(docker push *)"
+      "Bash(docker push *)",
+      "Edit(./.claude/**)",
+      "Edit(./.mcp.json)",
+      "Edit(./AGENTS.md)",
+      "Edit(./CLAUDE.md)",
+      "Edit(./.github/workflows/**)"
     ]
   },
   "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/py\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard.py\"",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
     "UserPromptSubmit": [
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/py\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/prompt_guard.py\"",
-            "timeout": 10
+            "type": "prompt",
+            "timeout": 20,
+            "prompt": "Prompt guard: no secrets or personal data in prompts. Hook input: $ARGUMENTS\n\nCheck only the prompt field. It fails if it contains a real-looking secret (an API key or token such as ghp_, github_pat_, sk-, AKIA, xoxb-, a private key block, a password inside a connection string) or a real-looking IBAN or national ID number. Mentioning secrets, .env files or passwords in general is fine. A prompt that starts with 'synthetic:' always passes.\nReply with JSON only: {\"ok\": true} if it passes, or {\"ok\": false, \"reason\": \"Prompt not sent: it contains what looks like <what>. Remove it, or use synthetic data. If it was real, rotate it now.\"}"
           }
         ]
       }
     ],
-    "PostToolUse": [
+    "PreToolUse": [
       {
         "matcher": "Write|Edit|MultiEdit",
         "hooks": [
           {
-            "type": "command",
-            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/py\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/no_em_dash.py\"",
-            "timeout": 10
+            "type": "prompt",
+            "timeout": 20,
+            "prompt": "House style: no em-dashes in prose. Hook input: $ARGUMENTS\n\nLook only at tool_input.file_path and the NEW text (tool_input.content, tool_input.new_string, or every edits[].new_string). It fails only if the path ends in .md, .mdx, .txt or .html and that new text contains an em-dash (U+2014). Anything else passes.\nReply with JSON only: {\"ok\": true} if it passes, or {\"ok\": false, \"reason\": \"No em-dashes in prose. Rewrite those sentences with a colon, a comma, or two sentences.\"}"
           }
         ]
       }

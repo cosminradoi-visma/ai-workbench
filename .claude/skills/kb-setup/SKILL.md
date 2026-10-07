@@ -1,6 +1,6 @@
 ---
 name: kb-setup
-description: First-run setup of this workbench KB. A 10-minute interview that fills 1-me/, NOW.md and the first work item, then offers safe personal defaults for ~/.claude. Run it by typing /kb-setup.
+description: First-run setup of this workbench KB. A 10-minute interview that fills 1-me/, NOW.md, the first work item and its first knowledge page, then offers safe personal defaults for ~/.claude. Run it by typing /kb-setup.
 disable-model-invocation: true
 ---
 
@@ -21,7 +21,7 @@ Set `owner:` in `0-meta/kb.yaml`.
 
 ## 2. First work item
 
-"What do you work on most this month?" Get the name, kind (product / project / repo),
+"What do you work on most this month?" Get the name, kind (project: it ends · area: it never does · product · repo),
 repo path or URL, what's live, the next step, and what's blocked.
 Copy `0-meta/templates/work-item/` to `2-work/<slug>/`, fill `README.md`, `state.md`, and a
 first `log.md` line. Add a row to `2-work/README.md`.
@@ -33,11 +33,16 @@ instead of asking.** Don't read source beyond that.
 - Two or three people they work with and what each owns → `team.md` (names and roles only).
 - Three internal terms an outsider wouldn't know → `glossary.md`.
 - One question for `how-i-work.md`: "What do you correct most often when reviewing someone's code?"
+- The system they touch most: owner, what it depends on, one trap → `4-know/systems/<system>.md`
+  from `0-meta/templates/system.md`, linked from the work item's card. Show `4-know/systems/_example-orders-api.md`
+  as the model: three good lines beat a long page.
 
 ## 4. NOW.md and clean-up
 
-One row per active item, plus "this week"; set `updated:` to today. Ask whether to delete
-`2-work/_example-orders-api/`. If yes, remove it and its rows in `2-work/README.md` and `NOW.md`.
+One row per active item, plus "this week"; set `updated:` to today. Ask whether to delete the
+examples (`2-work/_example-orders-api/` and the `_example-*` pages in `4-know/`). If yes, remove them and
+their lines in the folder `README.md`s, `INDEX.md`, `1-me/glossary.md` and `NOW.md`. Add `INDEX.md` lines for
+every page written in this setup.
 
 ## 5. Personal kit (ask first; never overwrite)
 
@@ -46,19 +51,19 @@ Explain in two lines what `3-toolbox/personal-kit/` does, then offer each piece:
 - `~/.claude/settings.json`: **merge** the JSON (union of `deny`/`ask` lists, keep existing keys).
   Show the resulting diff and get a yes before writing. Offer `settings.strict.json` only if
   they want the sandbox; check `/sandbox` works on their machine first.
-- `~/.claude/statusline.py`, its Perl twin `statusline.pl`, and `~/.claude/py` (the launcher that picks whichever runs here): copy.
 - Global skills: copy `kb-capture`, `kb-decide` and `kb-vet` to `~/.claude/skills/`, so they work from any repo.
 
 ## 6. Check
 
-Run `sh kb check` from the workbench root (it uses Python if there is one, Perl otherwise) and fix what it reports. Note the boot
-cost it prints. That number is the point of the whole exercise. Then run `sh kb report` and show
-the seven-drawer score: drawers 1–2 should now be filled; the rest come with `/kb-link-repo`.
+Ask the user to type `/context` and read the **Memory files** line: that is the boot cost, what loads
+before their first message. That number is the point of the whole exercise; it should be under 2,000.
+Check every new file has its index line (folder `README.md` and `INDEX.md`) and every link resolves.
+Then show the score (`kb-score`): drawers 1 and 2 should now be filled; the rest come with `/kb-link-repo`.
 
 ## Done when
 
-`sh kb check` reports no errors, `kb.yaml` has no TODO, and `NOW.md` lists a real item. If the check says
-"Neither Python 3 nor Perl found", the guards are off on this laptop: stop and run `sh kb doctor`, which names the fix.
+`kb.yaml` has no TODO, `NOW.md` lists a real item, every new page has its index line, and the user has
+read their boot cost from `/context`.
 Close with the next two steps: `kb-link-repo` in their main repo, and `kb-capture` at the end
 of their next working session.
 

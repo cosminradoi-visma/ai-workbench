@@ -13,7 +13,7 @@ their agents were still missing.
 
 One model for everything: **seven drawers**. Identity, Memory, Rules, Skills, Reach, Guards,
 Checks. Each says what the agent needs to know and where it lives. Around them sit the loop
-(capture, tidy), which keeps them true, and the toolbox, the shareable part. `kb_check.py --report`
+(capture, tidy), which keeps them true, and the toolbox, the shareable part. `kb-score`
 scores a workbench out of seven and names the next step for each empty drawer. Drawer 7 got real
 tools: golden tasks with a runner, and a fresh-eyes reviewer agent.
 
