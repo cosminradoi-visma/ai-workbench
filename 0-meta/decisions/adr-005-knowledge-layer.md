@@ -38,6 +38,6 @@ layer without replacing it, and was about thirty lines of tooling for every line
 
 ## Consequences
 
-The boot stays about 670 tokens: `4-know/` and `INDEX.md` load only when a task needs them. There is
+The boot stays about 750 tokens (measured with `/context`): `4-know/` and `INDEX.md` load only when a task needs them. There is
 one more folder to explain, and `kb-capture` asks one more question. The health check needs no change:
 it already requires an index in every folder.

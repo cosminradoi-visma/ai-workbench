@@ -86,7 +86,7 @@ more expensive. Arrange pages so the common question is answered in two hops:
 2. `<item>/state.md` → enough to start; its card links the `4-know/` pages it touches.
 3. `INDEX.md` and the folder indexes → one line per page, so the agent opens one page, not ten.
 
-Only `NOW.md` and the profile load up front (about 650 tokens). `INDEX.md` and every `4-know/`
+Only `CLAUDE.md`, `AGENTS.md` and `NOW.md` load up front (about 750 tokens, measured with `/context`). `INDEX.md` and every `4-know/`
 page load only when the task needs them, so a bigger knowledge base doesn't make the boot heavier.
 
 So **put the answer at the top**, keep first-read pages short, and push detail down

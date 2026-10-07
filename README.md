@@ -110,7 +110,7 @@ inbox/          drop raw material here; gitignored, untrusted, filed by kb-intak
 ```
   start                     work                       end
   NOW.md → state.md   →   agent works with context  →   kb-capture: state, log, decisions,
-  (~700 tokens)             opens 4-know/ pages            promote what lasts to 4-know/ (2 min)
+  (~750 tokens)             opens 4-know/ pages            promote what lasts to 4-know/ (2 min)
                             hooks guard it                         ↑
                                                          weekly: kb-tidy, "still true?"
 ```
