@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Workbench health check. Standard library only, Python 3.8+.
+"""Workbench health check. Standard library only, Python 3.8+. Perl twin: kb_check.pl.
 
     python3 0-meta/scripts/kb_check.py           full report
     python3 0-meta/scripts/kb_check.py --brief   problems only, max 8 lines (the session-start hook)
@@ -24,7 +24,9 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 HOME = pathlib.Path.home()
 NO_INDEX = {"templates", "scripts", "inbox", "notes", "slack-bot"}  # folders that don't need a README index (slack-bot: code, not KB pages)
-TEXT_EXT = {".md", ".yaml", ".yml", ".json", ".py", ".sh", ".toml", ".txt", ".example", ".mdc"}
+TEXT_EXT = {".md", ".yaml", ".yml", ".json", ".py", ".pl", ".sh", ".toml", ".txt", ".example", ".mdc"}
+# Files that hold the secret patterns themselves (this checker and the guards, in both twins).
+PATTERN_FILES = {"kb_check.py", "kb_check.pl", "guard.py", "guard.pl", "prompt_guard.py", "prompt_guard.pl"}
 SECRETS = [
     (r"AKIA[0-9A-Z]{16}", "AWS access key"),
     (r"gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{40,}", "GitHub token"),
@@ -140,7 +142,7 @@ def report(cfg):
 
     settings = user / "settings.json"
     personal = settings.exists() and "disableBypassPermissionsMode" in read(settings)
-    guarded = [r for r in repos if (r / ".claude" / "hooks" / "guard.py").exists()]
+    guarded = [r for r in repos if any((r / ".claude" / "hooks" / g).exists() for g in ("guard.py", "guard.pl"))]
     rows.append(("Guards", personal and bool(guarded), f"personal kit {'on' if personal else 'off'} · {len(guarded)} repo(s) guarded", "/kb-link-repo + personal kit"))
 
     golden = [p for r in repos for p in (r / ".claude" / "golden").glob("*.md") if p.stem != "README" and not p.stem.startswith("example")]
@@ -158,12 +160,13 @@ def report(cfg):
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # Windows would use cp1252 and crash on ✓ and →
     if "--report" in sys.argv:
         return report(config())
     brief = "--brief" in sys.argv
     cfg = config()
     errors, warnings, info = [], [], []
-    files = list(tracked_files())
+    files = sorted(tracked_files())  # deterministic order (and the Perl twin matches it)
 
     # boot
     boot = imports(ROOT / "CLAUDE.md") or [ROOT / "AGENTS.md"]
@@ -221,7 +224,7 @@ def main():
             warnings.append(f"{rel(page)} is {n} lines (limit {limit}): move history to log.md, detail to notes/")
         m = re.search(r"(?m)^updated:\s*(\d{4}-\d{2}-\d{2})", text)
         if not m:
-            warnings.append(f"{rel(page)} has no 'updated: YYYY-MM-DD' (run kb-setup or kb-capture)")
+            warnings.append(f"{rel(page)} has no 'updated: YYYY-MM-DD' (/kb-setup, or kb-capture)")
         elif (today - dt.date.fromisoformat(m.group(1))).days > stale:
             warnings.append(f"{rel(page)} last updated {m.group(1)}: still true? (kb-capture)")
 
@@ -239,8 +242,6 @@ def main():
             warnings.append(f"{rel(skill)}: description is {len(desc.group(1))} chars (max {cfg['skill_description_max']})")
 
     # safety
-    me = pathlib.Path(__file__).resolve()
-    guards = {"prompt_guard.py", "guard.py"}
     for p in files:
         if p.suffix not in TEXT_EXT and p.name not in {".env", ".mcp.json"}:
             continue
@@ -249,15 +250,18 @@ def main():
         for n, text in enumerate(read(p).splitlines(), 1):
             if HIDDEN.search(text):
                 bucket.append(f"{r}:{n} contains hidden Unicode (can smuggle instructions to an agent)")
-            if p.resolve() == me or p.name in guards:
+            if p.name in PATTERN_FILES:
                 continue
             for pattern, label in SECRETS:
                 if re.search(pattern, text):
                     bucket.append(f"{r}:{n} looks like a {label}")
 
     # setup
-    if "TODO" in read(ROOT / "0-meta" / "kb.yaml"):
-        info.append("Setup not finished: 0-meta/kb.yaml has TODO. Run /kb-setup.")
+    pending = "TODO" in read(ROOT / "0-meta" / "kb.yaml")
+    if pending:
+        info.append("Setup not finished: 0-meta/kb.yaml has TODO. Type /kb-setup.")
+        # an undated NOW.md is expected before setup, not a problem to tidy
+        warnings = [w for w in warnings if not w.startswith("NOW.md has no 'updated")]
     holes = sum(read(p).count("<!-- ") for p in files if p.suffix == ".md"
                 and p.relative_to(ROOT).parts[0] in ("1-me", "2-work") and "_example" not in str(p))
     if holes:
@@ -265,6 +269,9 @@ def main():
 
     if brief:
         problems = [f"ERROR {e}" for e in errors] + [f"warn  {w}" for w in warnings]
+        if pending and not errors:
+            print("Workbench not set up yet: type /kb-setup in Claude Code.")
+            problems = problems[: 0]
         if problems:
             print("Workbench check (run kb-tidy to fix):")
             for line in problems[:8]:

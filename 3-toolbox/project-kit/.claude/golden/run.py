@@ -6,10 +6,12 @@ influence. The runner gives every task a clean throwaway checkout (a git worktre
 HEAD), runs Claude headless on it, then runs the check. You get a pass count and what
 it cost. Run it after you change AGENTS.md, a skill, a rule or the model.
 
-    python3 .claude/golden/run.py            run every task
-    python3 .claude/golden/run.py refund     only tasks whose name contains "refund"
-    python3 .claude/golden/run.py --list     show tasks, run nothing
-    python3 .claude/golden/run.py --keep     keep the worktrees to inspect what it did
+    sh .claude/golden/run.sh            run every task
+    sh .claude/golden/run.sh refund     only tasks whose name contains "refund"
+    sh .claude/golden/run.sh --list     show tasks, run nothing
+    sh .claude/golden/run.sh --keep     keep the worktrees to inspect what it did
+
+run.sh picks Python, or the Perl twin run.pl where there is no Python. Change one twin, change the other.
 
 A task file:
 

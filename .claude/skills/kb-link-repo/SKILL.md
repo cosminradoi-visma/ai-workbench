@@ -8,6 +8,12 @@ disable-model-invocation: true
 
 You need the repo path and the workbench path. Ask for whichever is missing.
 
+- **No repo they may use** (company rules, nothing cloned yet)? Offer the practice repo, which has real history and
+  planted bugs: `git clone -b main <workbench>/3-toolbox/slack-bot/weather-api.bundle ~/w3/weather-api`. Its tests
+  need `uv`; linking it doesn't.
+- **This session must reach the repo.** If it's outside the workbench, the user types `/add-dir <repo path>` first
+  (or starts with `claude --add-dir <repo path>`), so you can read and write there without a prompt for every file.
+
 ## Steps
 
 1. **Read the repo cheaply:** README, the build or manifest file (`package.json`, `pom.xml`,
@@ -29,11 +35,12 @@ You need the repo path and the workbench path. Ask for whichever is missing.
    - **Yes:** **no `CLAUDE.local.md`** (it would feed your private workbench to every run). Copy
      `.claude/unattended.json.example` to `.claude/unattended.json` with the real paths and send tools, and add the
      "who may start it, anyone can stop it" lines to `AGENTS.md`.
-5. **Guard rails:** copy `.claude/hooks/guard.py`, `prompt_guard.py`, `no_em_dash.py`, `py` and `rules/tests.md`; merge
+5. **Guard rails:** copy `.claude/hooks/` whole (`guard`, `prompt_guard`, `no_em_dash`, each as `.py` with its `.pl` twin, and the
+   `py` launcher: the twins are how the guards run on a laptop without Python) and `rules/tests.md`; merge
    `gitattributes` into the repo's `.gitattributes` (hooks must stay LF on Windows). Merge
    `.claude/settings.json` (union of lists, keep existing hooks), and add the repo's test command to `permissions.allow`
    (e.g. `Bash(make test)`), so the reviewer can run it. Offer `pre-commit-config.yaml`.
-6. **Checks (drawer 7):** copy `.claude/agents/reviewer.md` and `.claude/golden/` (runner, README, and the two examples as formats:
+6. **Checks (drawer 7):** copy `.claude/agents/reviewer.md` and `.claude/golden/` (`run.sh`, `run.py`, `run.pl`, README, and the two examples as formats:
    `example.md` fails until you replace it).
    Offer to draft **three golden tasks** from recently fixed bugs (`git log --oneline -30`): each a small real job
    with a `check:` command that fails before the fix and passes after, and `protect:` on the tests. If the repo will run

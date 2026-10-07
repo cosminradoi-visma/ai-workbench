@@ -30,13 +30,16 @@ def written_text(tool, args):
 
 
 def main():
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")  # Windows would use cp1252
     try:
-        event = json.load(sys.stdin)
+        event = json.loads(sys.stdin.buffer.read().decode("utf-8", "replace"))
     except ValueError:
         sys.exit(0)
-    args = event.get("tool_input") or {}
-    path = args.get("file_path", "")
-    if not PROSE.search(path):
+    if not isinstance(event, dict) or not isinstance(event.get("tool_input"), dict):
+        sys.exit(0)
+    args = event["tool_input"]
+    path = args.get("file_path")
+    if not isinstance(path, str) or not PROSE.search(path):
         sys.exit(0)
     text = written_text(event.get("tool_name", ""), args)
     problems = []

@@ -11,8 +11,11 @@
        - send_tools + max_sends_per_hour: a post budget on the tools that talk to people
 
 Short and readable on purpose: extend the lists for your repo. A hook is one layer, not
-the wall. See 3-toolbox/safety.md. If the input can't be parsed, it allows the call
-(fail-open), so the agent never gets stuck on a broken hook.
+the wall. See 3-toolbox/safety.md. Input that is not a tool call at all is allowed, so the agent
+never gets stuck on a broken hook. Everything else fails closed: a tool call it cannot read, an
+invalid unattended.json, or a crash in this file blocks the call and says why. Input is always
+read as UTF-8 (Windows Python would otherwise use cp1252, and a mis-decoded byte must never mean "allow").
+guard.pl is its Perl twin for laptops without Python: change both (0-meta/scripts/test-hooks.sh).
 """
 import json
 import os
@@ -48,7 +51,8 @@ ASK_BASH = [
 ]
 AGENT_CONFIG = re.compile(
     r"(^|[\\/])(\.claude[\\/](settings[\w.]*\.json|hooks[\\/]|skills[\\/]|agents[\\/]|rules[\\/]|golden[\\/]|unattended\.json$)"
-    r"|\.mcp\.json$|\.cursor[\\/]|\.github[\\/](workflows|hooks)[\\/]|CLAUDE(\.local)?\.md$|AGENTS\.md$)"
+    r"|\.mcp\.json$|\.cursor[\\/]|\.github[\\/](workflows|hooks)[\\/]|CLAUDE(\.local)?\.md$|AGENTS\.md$)",
+    re.I,  # Windows and macOS file systems ignore case
 )
 
 
@@ -77,19 +81,77 @@ def main_checkout(project):
     return pathlib.Path(common).parent if common.endswith(".git") else project
 
 
+def slash(s):
+    return (s or "").replace("\\", "/")
+
+
+def no_constants(name):
+    raise ValueError(f"{name} is not JSON")  # NaN, Infinity: Python accepts them, JSON (and guard.pl) do not
+
+
+def load_json(raw_bytes):
+    return json.loads(raw_bytes.decode("utf-8", "replace"), parse_constant=no_constants)
+
+
+def text_of(value):
+    if value is None:
+        return ""
+    return value if isinstance(value, str) else json.dumps(value)
+
+
+def first_path(args):
+    for key in ("file_path", "notebook_path", "path"):
+        value = args.get(key)
+        if isinstance(value, str) and value:
+            return value
+    return ""
+
+
+def home_forms(raw):
+    """The path as written, and with ~ as $HOME and %USERPROFILE%, all with forward slashes."""
+    forms = [raw] + [raw.replace("~", h, 1) for h in (os.environ.get("HOME"), os.environ.get("USERPROFILE")) if h and raw.startswith("~")]
+    return [slash(f).rstrip("/") for f in forms]
+
+
+def invalid(why):
+    deny(f".claude/unattended.json is invalid ({why}). Fix it: this file keeps a bot away from private data")
+
+
 def unattended(project, tool, args):
     try:
-        cfg = json.loads((project / ".claude" / "unattended.json").read_text(encoding="utf-8"))
-    except (OSError, ValueError):
+        raw = (project / ".claude" / "unattended.json").read_bytes()
+    except OSError:
         return
-    text = " ".join(str(v) for v in args.values())
-    for raw in cfg.get("private_paths", []):
-        full = os.path.expanduser(raw).rstrip("/")
-        if full and (full in text or raw.rstrip("/") in text):
-            deny(f"{raw} is private: an unattended agent answers from this repo only")
+    try:
+        cfg = load_json(raw)
+    except ValueError:
+        invalid("not valid JSON")
+    if not isinstance(cfg, dict):
+        invalid("the top level must be an object")
+    private = cfg.get("private_paths", [])
+    if not isinstance(private, list) or not all(isinstance(x, str) for x in private):
+        invalid("private_paths must be a list of strings")
     send = cfg.get("send_tools")
+    if send is not None:
+        if not isinstance(send, str):
+            invalid("send_tools must be a regular expression")
+        try:
+            re.compile(send)
+        except re.error:
+            invalid("send_tools is not a valid regular expression")
+    limit = cfg.get("max_sends_per_hour", 10)
+    if isinstance(limit, bool) or not isinstance(limit, int) or limit < 0:
+        invalid("max_sends_per_hour must be a whole number")
+
+    text = slash(" ".join(str(v) for v in args.values() if not isinstance(v, (dict, list)))).lower()
+    searched = slash(args.get("path") if isinstance(args.get("path"), str) else "").rstrip("/").lower()
+    for raw_path in private:
+        for form in home_forms(raw_path):
+            form = form.lower()
+            # named directly, or searched from a folder above it (Grep ~/workbench)
+            if form and (form in text or (len(searched) > 1 and form.startswith(searched + "/"))):
+                deny(f"{raw_path} is private: an unattended agent answers from this repo only")
     if send and re.search(send, tool, re.I):
-        limit = int(cfg.get("max_sends_per_hour", 10))
         log = main_checkout(project) / ".claude" / "state" / "sends.log"
         now = time.time()
         try:
@@ -103,21 +165,31 @@ def unattended(project, tool, args):
 
 
 def main():
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")  # Windows would use cp1252
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    raw = sys.stdin.buffer.read()
     try:
-        event = json.load(sys.stdin)
+        event = load_json(raw)
     except ValueError:
+        if raw.lstrip().startswith(b"{"):
+            deny("this tool call could not be read (malformed JSON), so it is blocked to be safe")
         sys.exit(0)
-    tool = event.get("tool_name", "")
-    args = event.get("tool_input") or {}
-    project = pathlib.Path(os.environ.get("CLAUDE_PROJECT_DIR") or event.get("cwd") or ".")
+    if not isinstance(event, dict):
+        sys.exit(0)
+    tool = text_of(event.get("tool_name"))
+    args = event.get("tool_input")
+    if not isinstance(args, dict):
+        args = {}
+    project = pathlib.Path(os.environ.get("CLAUDE_PROJECT_DIR") or text_of(event.get("cwd")) or ".")
     if any((p / ".claude" / "STOP").exists() for p in {project, main_checkout(project)}):
         deny("this repo is stopped (.claude/STOP exists). Remove that file to resume")
     unattended(project, tool, args)
 
     if tool == "Bash":
-        cmd = args.get("command", "")
+        cmd = text_of(args.get("command"))
         for pattern, reason in DENY_BASH:
-            if re.search(pattern, cmd, re.I):
+            # also with Windows backslashes as slashes: cat .aws\credentials
+            if re.search(pattern, cmd, re.I) or re.search(pattern, slash(cmd), re.I):
                 deny(reason)
         for pattern, reason in ASK_BASH:
             if re.search(pattern, cmd, re.I):
@@ -125,13 +197,23 @@ def main():
                     reason += ": check it exists, is the one you meant, and isn't brand new (models invent package names)"
                 ask(reason)
     elif tool in ("Read", "Edit", "Write", "MultiEdit", "NotebookEdit", "Grep"):
-        path = args.get("file_path") or args.get("notebook_path") or args.get("path") or ""
-        if re.search(SECRET_PATH + r"$", path, re.I):
+        path = first_path(args)
+        if re.search(SECRET_PATH + r"$", slash(path), re.I):
             deny(f"access to a secrets file ({path})")
+        glob = text_of(args.get("glob")).replace("*", "").replace("?", "")
+        if tool == "Grep" and glob and re.search(SECRET_PATH + r"$", slash(glob), re.I):
+            deny(f"searching secrets files ({args.get('glob')})")
         if tool != "Read" and tool != "Grep" and AGENT_CONFIG.search(path):
             ask(f"edits {path}, which changes how agents behave in this repo")
     sys.exit(0)
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except SystemExit:
+        raise
+    except Exception as exc:  # a broken guard must not mean "allow"
+        print(f"Blocked by .claude/hooks/guard.py: the guard itself failed ({type(exc).__name__}: {exc}). "
+              "Ask the user to check .claude/hooks and .claude/unattended.json.", file=sys.stderr)
+        sys.exit(2)

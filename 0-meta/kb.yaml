@@ -1,4 +1,4 @@
-# Workbench configuration. Flat keys only (read by 0-meta/scripts/kb_check.py).
+# Workbench configuration. Flat keys only (read by 0-meta/scripts/kb_check.py and its twin kb_check.pl).
 owner: TODO-your-name
 language: en
 

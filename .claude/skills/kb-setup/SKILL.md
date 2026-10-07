@@ -46,18 +46,19 @@ Explain in two lines what `3-toolbox/personal-kit/` does, then offer each piece:
 - `~/.claude/settings.json`: **merge** the JSON (union of `deny`/`ask` lists, keep existing keys).
   Show the resulting diff and get a yes before writing. Offer `settings.strict.json` only if
   they want the sandbox; check `/sandbox` works on their machine first.
-- `~/.claude/statusline.py` and `~/.claude/py` (the Python launcher it runs through): copy.
+- `~/.claude/statusline.py`, its Perl twin `statusline.pl`, and `~/.claude/py` (the launcher that picks whichever runs here): copy.
 - Global skills: copy `kb-capture`, `kb-decide` and `kb-vet` to `~/.claude/skills/`, so they work from any repo.
 
 ## 6. Check
 
-Run `python3 0-meta/scripts/kb_check.py` (or `python`) and fix what it reports. Note the boot
-cost it prints. That number is the point of the whole exercise. Then run it with `--report` and show
+Run `sh kb check` from the workbench root (it uses Python if there is one, Perl otherwise) and fix what it reports. Note the boot
+cost it prints. That number is the point of the whole exercise. Then run `sh kb report` and show
 the seven-drawer score: drawers 1–2 should now be filled; the rest come with `/kb-link-repo`.
 
 ## Done when
 
-`kb_check.py` reports no errors, `kb.yaml` has no TODO, and `NOW.md` lists a real item.
+`sh kb check` reports no errors, `kb.yaml` has no TODO, and `NOW.md` lists a real item. If the check says
+"Neither Python 3 nor Perl found", the guards are off on this laptop: stop and run `sh kb doctor`, which names the fix.
 Close with the next two steps: `kb-link-repo` in their main repo, and `kb-capture` at the end
 of their next working session.
 

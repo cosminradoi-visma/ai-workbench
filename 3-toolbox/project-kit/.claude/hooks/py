@@ -1,11 +1,28 @@
 #!/bin/sh
-# Runs a Python hook with the first working Python 3. Windows ships a fake `python3`
-# (a Microsoft Store stub), so "is it on PATH" is not enough: each candidate is tried.
-# No Python at all → exit 1: Claude Code shows the error, and the hook lets the call through.
-for p in python3 python py; do
-  if command -v "$p" >/dev/null 2>&1 && "$p" -c "import sys; sys.exit(sys.version_info < (3, 8))" >/dev/null 2>&1; then
-    exec "$p" "$@"
-  fi
-done
-echo "No Python 3 found, so the guard hooks are NOT running. Install Python 3 (https://www.python.org/downloads/)." >&2
+# Runs a hook or script on whatever this laptop has, with nothing to install:
+#   1. a real Python 3.8+ (python3, python, or the Windows "py -3" launcher), in UTF-8 mode;
+#   2. otherwise its Perl twin (same name, .pl): Perl ships with git on Windows, macOS and Linux.
+# Windows' `python3` is often a Store stub and macOS' /usr/bin/python3 is a stub until the
+# developer tools are installed, so each candidate is tested, never assumed.
+# Nothing works → exit 1 with a visible message: the call goes through and you are told the guards are off.
+script=$1
+export PYTHONUTF8=1 PYTHONIOENCODING=utf-8
+OK='import sys; sys.exit(sys.version_info < (3, 8))'
+
+mac_stub() { # macOS /usr/bin/python3 without the Command Line Tools: calling it pops an installer
+  [ "$(uname -s 2>/dev/null)" = Darwin ] && [ "$(command -v python3)" = /usr/bin/python3 ] && ! xcode-select -p >/dev/null 2>&1
+}
+
+case $script in
+  *.py)
+    if command -v python3 >/dev/null 2>&1 && ! mac_stub && python3 -c "$OK" >/dev/null 2>&1 </dev/null; then exec python3 "$@"; fi
+    if command -v python >/dev/null 2>&1 && python -c "$OK" >/dev/null 2>&1 </dev/null; then exec python "$@"; fi
+    if command -v py >/dev/null 2>&1 && py -3 -c "$OK" >/dev/null 2>&1 </dev/null; then exec py -3 "$@"; fi
+    twin=${script%.py}.pl
+    if [ -f "$twin" ] && command -v perl >/dev/null 2>&1 && perl -MJSON::PP -e1 2>/dev/null; then
+      shift; exec perl "$twin" "$@"
+    fi
+    ;;
+esac
+echo "Neither Python 3 nor Perl found, so $(basename "$script") is NOT running (guards off). Install Git (it brings Perl) or Python 3, then restart Claude Code." >&2
 exit 1

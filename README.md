@@ -24,7 +24,7 @@ would otherwise guess at, or spend tokens finding out:
 Around them: **the loop** (`kb-capture` after work, `kb-tidy` weekly) keeps the drawers true, and
 **the toolbox** (`3-toolbox/`) is the shareable part: what you hand a colleague.
 
-`python3 0-meta/scripts/kb_check.py --report` shows which drawers your agents have, and what to do about the empty ones.
+`sh kb report` shows which drawers your agents have, and what to do about the empty ones.
 
 Claude's own auto-memory is a separate, private notebook it keeps for itself. It is useful, but it isn't a drawer you curate.
 
@@ -44,25 +44,41 @@ Sources: [`0-meta/decisions/research.md`](0-meta/decisions/research.md).
 
 ## Set it up (about 15 minutes)
 
-1. **Create your copy:** "Use this template" → a **private** repo in your own account → clone it to `~/workbench`.
-   ```bash
-   gh repo create my-workbench --private --template cosminradoi-visma/ai-workbench --clone
-   mv my-workbench ~/workbench
-   ```
-2. **Open Claude Code there and run `/kb-setup`.** A short interview fills in your profile, your
+**Needs:** Claude Code and git. That's all.
+- **Windows:** [Git for Windows](https://git-scm.com/download/win) (the per-user install works without admin). It gives
+  Claude Code its Git Bash, and brings Perl, which runs the guards. WSL works too.
+- **macOS:** `xcode-select --install` (git, Perl and Python in one go).
+- **Linux:** git from your package manager. Perl is already there.
+- **Python is optional.** The hooks and the check use Python 3.8+ if you have it, and their Perl twins if you don't.
+  Same rules, same messages, tested against each other.
+- **`gh` is optional.** It saves a few clicks; the web button does the same job.
+
+Not sure? After cloning, run `sh kb doctor`: it lists what this laptop has and the exact fix for anything missing.
+
+1. **Create your copy**, a **private** repo in your own account, cloned to `~/workbench`. Either:
+   - on GitHub, **Use this template → Create a new repository → Private**, then
+     ```bash
+     git clone https://github.com/<you>/my-workbench.git ~/workbench
+     ```
+     (git asks you to sign in: on Windows a browser window opens; on macOS/Linux use a
+     [personal access token](https://github.com/settings/tokens) as the password, or an SSH URL), or
+   - with `gh` logged in (`gh auth status`):
+     ```bash
+     gh repo create my-workbench --private --template cosminradoi-visma/ai-workbench --clone
+     mv my-workbench ~/workbench
+     ```
+2. **Open Claude Code there and type `/kb-setup`.** A short interview fills in your profile, your
    first work item and `NOW.md`, and offers safe personal defaults for `~/.claude/`.
-3. **Connect your main repo:** from the workbench, run `/kb-link-repo` and give it the repo path.
+3. **Connect your main repo:** from the workbench, type `/kb-link-repo` and give it the repo path.
 4. **End your next working session with "capture".** That's the habit that makes it work.
 
-Needs: Claude Code, git, the `gh` CLI logged in (`gh auth status`) or the web "Use this template" button, Python 3.8+
-(for the hooks and the check; macOS: `xcode-select --install` or python.org). On Windows: WSL, or Git for Windows plus
-Python from python.org. The Microsoft Store `python3` stub doesn't count; the launcher skips it.
 Copilot, Cursor and Codex read `AGENTS.md`, so the KB works there too. The skills and hooks are Claude Code's.
 
 ## What's where
 
 ```
 AGENTS.md       the boot file: under 60 lines, a router, not an encyclopedia
+kb              one command for every laptop: sh kb check | report | doctor | test
 NOW.md          what's active, read first, under 40 lines
 1-me/           private: profile, how you work, team, glossary, learnings
 2-work/         private: one folder per product / project / repo (state, log, decisions)
@@ -81,6 +97,8 @@ inbox/          drop raw material here; gitignored, untrusted, filed by kb-intak
                                                                           weekly: /kb-tidy
 ```
 
+With a slash, you type it. Without one, you just say it in plain words and the agent picks the skill.
+
 | Skill | When |
 |-------|------|
 | `/kb-setup` | Once, first run |
@@ -92,7 +110,7 @@ inbox/          drop raw material here; gitignored, untrusted, filed by kb-intak
 | `kb-vet` | Before installing any skill, plugin, hook or MCP server |
 
 In each linked repo you also get a **`reviewer`** agent ("review this") and a **golden-tasks runner**
-(`python3 .claude/golden/run.py`): drawer 7.
+(`.claude/golden/`): drawer 7.
 
 ## Safety, in one breath
 
@@ -102,9 +120,17 @@ and a way out in one session. The full page is [`3-toolbox/safety.md`](3-toolbox
 
 ## Keep it healthy
 
-`python3 0-meta/scripts/kb_check.py` (Windows: `py 0-meta/scripts/kb_check.py`; anywhere:
-`sh 3-toolbox/project-kit/.claude/hooks/py 0-meta/scripts/kb_check.py`) reports boot cost, broken links, stale or oversized pages,
+`sh kb check` (inside Claude Code: `! sh kb check`) reports boot cost, broken links, stale or oversized pages,
 missing indexes, likely secrets and hidden Unicode. It runs at every session start and prints only problems.
+The same command works on every laptop, with or without Python. On Windows, run it in Git Bash or
+through Claude Code (`! sh kb check`): plain PowerShell has no `sh`.
+
+| Command | What it does |
+|---------|--------------|
+| `sh kb check` | the health check |
+| `sh kb report` | your score out of seven drawers |
+| `sh kb doctor` | what this laptop has, and how to fix what's missing |
+| `sh kb test` | the hook tests, on every runtime this laptop has |
 
 ## Where it came from
 

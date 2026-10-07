@@ -7,7 +7,7 @@ How to write and file pages. Agents need this to **write** here, not to read.
 Identity → `1-me/` · Memory → `NOW.md`, `2-work/*/state.md` + `log.md`, `1-me/learnings.md` · Rules → each repo's
 `AGENTS.md` + `.claude/rules/` · Skills → `.claude/skills/` · Reach → MCP per repo (`.mcp.json`) or a CLI, register in `3-toolbox/mcp.md` ·
 Guards → permissions, hooks, sandbox, `3-toolbox/safety.md` · Checks → repo tests, `.claude/golden/`, the `reviewer` agent.
-When you add something, put it in its drawer. `kb_check.py --report` shows which drawers are empty.
+When you add something, put it in its drawer. `sh kb report` shows which drawers are empty.
 
 ## The layers
 
@@ -86,5 +86,5 @@ until the owner confirms it. Accepted ADRs are never rewritten; a new one supers
 ## Never in here
 
 Secrets, tokens, connection strings, customer data, payroll or HR records, other
-people's personal data. See `3-toolbox/safety.md`. `kb_check.py` scans for the
+people's personal data. See `3-toolbox/safety.md`. The health check (`sh kb check`) scans for the
 obvious cases, but it can't catch everything.
