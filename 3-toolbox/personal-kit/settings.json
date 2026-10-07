@@ -23,9 +23,5 @@
   "env": {
     "DISABLE_FEEDBACK_COMMAND": "1",
     "CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY": "1"
-  },
-  "statusLine": {
-    "type": "command",
-    "command": "sh ~/.claude/py ~/.claude/statusline.py"
   }
 }

@@ -1,6 +1,6 @@
 ---
-kind: repo          # product | project | repo
-status: active      # active | paused | done
+kind: repo          # project (ends) | area (never ends: on-call, a service you own) | product | repo
+status: active      # active | paused | done (then move it to 2-work/_archive/)
 updated: YYYY-MM-DD
 ---
 
@@ -13,6 +13,11 @@ updated: YYYY-MM-DD
 - Repo: <!-- url or local path -->
 - Tracker: <!-- board / issue list -->
 - Runbook / docs: <!-- url -->
+
+## What we know about it
+
+<!-- Links to the lasting knowledge in 4-know/: the system pages, concepts, people, playbooks,
+     incidents this item touches. kb-capture promotes facts there and links them here. -->
 
 ## In this folder
 

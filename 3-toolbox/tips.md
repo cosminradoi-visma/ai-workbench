@@ -1,6 +1,6 @@
 ---
-updated: 2026-10-02
-verified: Claude Code 2.1.287 docs and changelog. Features move fast, so re-check anything that surprises you.
+updated: 2026-10-07
+verified: Claude Code 2.1.292 commands reference and changelog. Features move fast, so re-check anything that surprises you.
 ---
 
 # Tips and tricks
@@ -8,14 +8,33 @@ verified: Claude Code 2.1.287 docs and changelog. Features move fast, so re-chec
 The ones that pay back most, grouped by what they save. Claude Code first; the
 equivalents for other tools are at the end.
 
+## Start here: six to try today
+
+1. **"Interview me."** Don't write the long prompt: say "interview me about <task>" and answer its
+   questions, one at a time, until it says it has enough. Then `/clear` and build from the spec it wrote.
+   From Anthropic's Claude Code team; works in any agent ("ask me one question at a time").
+2. **"Standup"** in the morning, **"wrap up"** at the end of the day. Twenty seconds each, from your own
+   commits and `NOW.md`. The wrap-up is a work journal: reviews write themselves.
+3. **`/btw <question>`** asks a side question without derailing the current task.
+4. **Esc Esc** (or `/rewind`) goes back to before the last change, code and conversation. Try things fearlessly.
+5. **`/statusline`**: describe the status line you want ("repo, branch, context %, and a tiny weather icon")
+   and it builds it. **`/powerup`**: two-minute interactive lessons, if you are new.
+6. **`/voice`**, then hold Space and talk. Spoken prompts carry more context than typed ones. Needs a
+   claude.ai sign-in and a microphone; no WSL or SSH. Any other tool: your OS dictation (Windows Win+H,
+   macOS Fn twice).
+
+And after a month of use: **`/insights`** writes a report on how you use Claude Code, what goes wrong and
+what to try. Feed its findings to `1-me/learnings.md`. (It is the model reading your sessions: fine on the
+company account, but skip it if your sessions ever held customer data.)
+
 ## See what you're paying for
 
 1. **`/context`** shows what is in the window right now: system prompt, CLAUDE.md, skills,
    MCP tools, conversation. Run it once in each repo; the surprises are usually MCP tools.
 2. **`/usage`** (also `/cost`) shows usage and cache hits, broken down by skill, subagent and MCP server.
-3. **Put context use in your status line.** `personal-kit/statusline.py` shows model, context %
-   and session cost.
-4. **`python3 0-meta/scripts/kb_check.py`** shows what your KB costs before you type anything.
+3. **Put context use in your status line.** Type `/statusline` and ask for model, context % and cost:
+   Claude Code writes it for you, in your own `~/.claude`.
+4. **`/context`** shows what your KB costs before you type anything: the "Memory files" line.
 
 ## Keep the context clean
 
@@ -70,7 +89,7 @@ equivalents for other tools are at the end.
 
 ## Is it any good, and is it worth it?
 
-26. **Keep three to five golden tasks per repo:** real, small, with a known right answer. `python3 .claude/golden/run.py`
+26. **Keep three to five golden tasks per repo:** real, small, with a known right answer. the `golden-run` skill
     runs each in a clean worktree after you change CLAUDE.md, a skill or the model, and counts passes and cost. That's your eval.
 27. **Judge with something the agent can't edit:** tests it didn't write (`protect:` in a golden task), the `reviewer`
     agent with fresh context, a human reading the diff. "The agent says the tests pass" is not evidence.

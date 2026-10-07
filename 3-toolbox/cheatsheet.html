@@ -50,7 +50,7 @@
       <div class="loop">
         <span><code>NOW.md</code> → <code>state.md</code> (~1k tokens)</span> →
         <span>agent works; hooks guard it</span> →
-        <span><code>kb-capture</code>: state · log · decisions · learnings (2 min)</span> →
+        <span><code>kb-capture</code>: state · log · decisions · promote what lasts to <code>4-know/</code> (2 min)</span> →
         <span>weekly <code>kb-tidy</code></span>
       </div>
     </section>
@@ -58,12 +58,12 @@
     <section>
       <h2>Skills</h2>
       <table>
-        <tr><td><code>/kb-setup</code></td><td>once: the interview</td></tr>
+        <tr><td><code>/kb-setup</code></td><td>once: it discovers how you work</td></tr>
         <tr><td><code>/kb-link-repo</code></td><td>once per repo: AGENTS.md, guards, link</td></tr>
         <tr><td><code>kb-capture</code></td><td>end of every real session</td></tr>
         <tr><td><code>kb-decide</code></td><td>a real choice was made</td></tr>
-        <tr><td><code>kb-intake</code></td><td>file what's in <code>inbox/</code></td></tr>
-        <tr><td><code>kb-tidy</code></td><td>weekly, or when the start-up check complains</td></tr>
+        <tr><td><code>interview me</code> · <code>standup</code> · <code>wrap up</code></td><td>before a vague task · start and end of day</td></tr>
+        <tr><td><code>kb-tidy</code></td><td>weekly: "still true?"</td></tr>
         <tr><td><code>kb-vet</code></td><td>before installing any skill, plugin or MCP</td></tr>
       </table>
     </section>
@@ -72,14 +72,14 @@
       <h2>The seven drawers</h2>
       <table>
         <tr><td><b>1 Identity</b></td><td><code>1-me/profile.md</code>, <code>how-i-work.md</code></td></tr>
-        <tr><td><b>2 Memory</b></td><td><code>NOW.md</code>, <code>state.md</code> + <code>log.md</code>, learnings</td></tr>
+        <tr><td><b>2 Memory</b></td><td><code>NOW.md</code>, <code>state.md</code> + <code>log.md</code>; <code>4-know/</code>: systems, people, domain, playbooks, incidents</td></tr>
         <tr><td><b>3 Rules</b></td><td>repo <code>AGENTS.md</code>, <code>.claude/rules/</code></td></tr>
         <tr><td><b>4 Skills</b></td><td><code>.claude/skills/</code></td></tr>
         <tr><td><b>5 Reach</b></td><td>MCP per repo, or a CLI</td></tr>
         <tr><td><b>6 Guards</b></td><td>permissions, hooks, sandbox</td></tr>
         <tr><td><b>7 Checks</b></td><td>tests, <code>.claude/golden/</code>, <code>reviewer</code></td></tr>
       </table>
-      <p style="margin-top:1mm;color:var(--muted);font-size:8.2pt">Your score: <code>kb_check.py --report</code></p>
+      <p style="margin-top:1mm;color:var(--muted);font-size:8.2pt">Your score: say <code>score my workbench</code></p>
     </section>
 
     <section>
@@ -119,7 +119,7 @@
         <li>Second time you explain it → make it a skill.</li>
         <li>A fresh-eyes reviewer catches what the author rationalised.</li>
         <li>Don't switch model mid-task: cold cache.</li>
-        <li>Golden tasks: <code>python3 .claude/golden/run.py</code> → passes and cost.</li>
+        <li>Golden tasks: <code>/golden-run</code> → passes and cost.</li>
       </ol>
     </section>
 

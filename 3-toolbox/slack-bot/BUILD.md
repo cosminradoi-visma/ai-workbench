@@ -88,7 +88,7 @@ You approve that send yourself. Check Slack: the message is in your DM with your
 > Write `~/w3/my-bot/tick.sh` (POSIX sh, under 80 lines) and `~/w3/my-bot/prompts/answer.md`.
 > At the top of `tick.sh`: my user ID, my DM's ID, my name (`git config user.name`), the repo and workbench paths.
 > One tick:
-> 1. Stop at once if `~/w3/my-bot/STOP` or `<repo>/.claude/STOP` exists.
+> 1. Stop at once if `~/w3/my-bot/STOP` exists.
 > 2. **Find**: export BOT_OWNER, BOT_CHANNEL, BOT_NAME, BOT_SINCE. One `claude -p` on haiku, `--max-turns 4`,
 >    `--settings bot-settings.json --setting-sources project --permission-mode dontAsk`, `--output-format json`,
 >    `--json-schema` returning `{"hits":[{"ts":"…","thread_ts":"…"}]}`. Prompt: first load the tool with ToolSearch

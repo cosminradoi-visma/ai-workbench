@@ -35,7 +35,7 @@ Four files and two tests in a folder of your own (`~/w3/my-bot`), about 250 line
 
 The loop, each tick (every minute, from `while :; do sh tick.sh; sleep 60; done`):
 
-1. **Stop?** A `STOP` file in the bot folder or `<repo>/.claude/STOP` (the same file part 1's `guard.py` uses): do nothing.
+1. **Stop?** A `STOP` file in the bot folder: do nothing. (Ctrl-C stops a loop you're watching.)
 2. **Find.** One small run (Haiku) searches Slack. The guard replaces whatever query it types with exactly
    `in:<#your-DM> from:<@you> hasmy::robot_face: after:<yesterday>`. `hasmy::` returns only messages **you**
    reacted to, so Slack itself checks that it is you.
@@ -67,7 +67,7 @@ A bot in a team channel brings the untrusted leg back in full: it never gets the
 | What it may say, and where | yes | `slack-guard.sh` on every Slack tool: search pinned, read only the claimed thread, 👀/✅ only, send only to the claimed thread, signed, no mentions, no `<!here>`, no links, no token shapes. Everything else denied (exit 2). No `jq` = deny |
 | What it may read | yes | `bot-settings.json`: denies `.env*`, `*secret*`, the workbench, `~/.ssh`, `~/.aws`, `~/.config`, `~/.claude`; no edits, no web |
 | Not your personal setup | yes | every bot run uses `--setting-sources project`: your own allow rules and hooks in `~/.claude` don't apply |
-| Anyone can stop it | yes | `touch ~/w3/my-bot/STOP` or `touch <repo>/.claude/STOP` |
+| Anyone can stop it | yes | `touch ~/w3/my-bot/STOP`, checked at the start of every tick |
 | Caps per run | yes | `--max-turns` and `--max-budget-usd` on every run |
 | Never twice | yes | claim in `done.txt` before answering |
 | Proved before trusted | yes | `tests/guard-test.sh`, and `tests/canary.sh`: the bot, with its settings, tries Read, `head`, `sed` and `grep` on `.env`, `NOW.md` and `~/.ssh`, and must be denied every time |
@@ -141,7 +141,7 @@ In PowerShell, run the bot with `& "$env:ProgramFiles\Git\bin\sh.exe" tick.sh`. 
 | `BUILD.md` | the prompts, in order |
 | `weather-api.bundle` | the practice repo with its history (`git clone weather-api.bundle`); six planted bugs, reports in `bugs/` |
 | `weather-api/` | the same repo as files, to browse here |
-| `golden/` | must-decline tasks for a repo that runs a bot (`kb-link-repo` copies them) |
+| `golden/` | must-decline examples for a repo that runs a bot: copy one into the repo's `.claude/golden/` |
 | `showcase/` | the trainer's demo: `SHOWCASE.md`, the messages, a demo workbench |
 
 ## Tested and not
