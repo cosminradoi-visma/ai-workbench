@@ -13,9 +13,9 @@ equivalents for other tools are at the end.
 1. **`/context`** shows what is in the window right now: system prompt, CLAUDE.md, skills,
    MCP tools, conversation. Run it once in each repo; the surprises are usually MCP tools.
 2. **`/usage`** (also `/cost`) shows usage and cache hits, broken down by skill, subagent and MCP server.
-3. **Put context use in your status line.** `personal-kit/statusline.py` shows model, context %
-   and session cost.
-4. **`python3 0-meta/scripts/kb_check.py`** shows what your KB costs before you type anything.
+3. **Put context use in your status line.** Type `/statusline` and ask for model, context % and cost:
+   Claude Code writes it for you, in your own `~/.claude`.
+4. **`/context`** shows what your KB costs before you type anything: the "Memory files" line.
 
 ## Keep the context clean
 
@@ -70,7 +70,7 @@ equivalents for other tools are at the end.
 
 ## Is it any good, and is it worth it?
 
-26. **Keep three to five golden tasks per repo:** real, small, with a known right answer. `python3 .claude/golden/run.py`
+26. **Keep three to five golden tasks per repo:** real, small, with a known right answer. the `golden-run` skill
     runs each in a clean worktree after you change CLAUDE.md, a skill or the model, and counts passes and cost. That's your eval.
 27. **Judge with something the agent can't edit:** tests it didn't write (`protect:` in a golden task), the `reviewer`
     agent with fresh context, a human reading the diff. "The agent says the tests pass" is not evidence.

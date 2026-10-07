@@ -1,5 +1,5 @@
 ---
-updated: 2026-10-02
+updated: 2026-10-07
 status: verified
 verified: primary sources fetched 2026-10-02 unless marked [secondary]
 ---
@@ -23,7 +23,7 @@ field moves monthly.
 | 50% of AGENTS.md files never updated; 23% of repos have stale references in AI config | [MSR 2026 study](https://usewire.io/blog/agents-md-466-projects-context-engineering/) [secondary], [arXiv 2606.09090](https://arxiv.org/html/2606.09090v1) | `kb-capture`, staleness check, link check |
 | Stale specs were the main failure in a 283-session project; "repeated explanations signal documentation needs" | [Codified Context, arXiv 2602.20478](https://arxiv.org/html/2602.20478v1) | Write a skill the second time you explain something |
 | Use the filesystem as memory; restorable compression (keep the path); rewrite a todo to fight drift | [Manus, Context engineering lessons](https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus) | Links over copies; state snapshot |
-| Raw sources → maintained wiki → schema file; ingest / query / lint; one-line index + append-only log | Karpathy's "LLM Wiki" [secondary: [AAIF summary](https://aaif.io/blog/karpathys-llm-wiki-as-agent-memory)] | `inbox/` → `kb-intake`; `log.md`; `kb_check.py` |
+| Raw sources → maintained wiki → schema file; ingest / query / lint; one-line index + append-only log | Karpathy's "LLM Wiki" [secondary: [AAIF summary](https://aaif.io/blog/karpathys-llm-wiki-as-agent-memory)] | `inbox/` → `kb-intake`; `log.md`; `kb-tidy` |
 | Memory split: human-written instructions vs agent-written auto-memory; path-scoped rules | [Claude Code memory docs](https://code.claude.com/docs/en/memory) | "Where does this go" table; `.claude/rules/` |
 | Skills: ~100 tokens of metadata until used; name must match folder; description says what + when | [Agent Skills spec](https://agentskills.io/specification), [best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices) | Seven local skills, short descriptions |
 | ADR template and statuses | [MADR](https://adr.github.io/madr/) | Proposed → Accepted → Superseded |
@@ -54,8 +54,33 @@ field moves monthly.
 
 These are internal documents: cite them by name, don't copy them into public places.
 
+## Organising the knowledge (2026-10-07)
+
+Read for ADR-005, after the first version turned out to organise tasks well and knowledge hardly at all.
+Fetched 2026-10-07. Only Chroma and the two AGENTS.md studies are measurements; the rest is established
+practice or vendor guidance.
+
+| Finding | Source | Changed |
+|---------|--------|---------|
+| Sort by actionability: projects end, areas never do, resources are reference, archives hold the inactive | [PARA, Forte Labs](https://fortelabs.com/blog/para/) | `kind: project · area`; `2-work/_archive/` |
+| Stale and near-duplicate pages hurt models, not just cost: one distractor already lowers accuracy | [Chroma, Context rot](https://research.trychroma.com/context-rot) | Archive finished work out of the read path |
+| Four kinds of document (tutorial, how-to, reference, explanation); don't mix them on one page | [Diátaxis](https://diataxis.fr/) | "Which kind of page" table; playbooks vs concepts vs system pages |
+| Notes per concept, not per date or project; titles that state the claim; link densely | [Evergreen notes, Matuschak](https://notes.andymatuschak.org/Evergreen_notes) | `4-know/domain/` titled with the claim; "promote, don't bury" |
+| An LLM-maintained wiki of entity and concept pages; one `index.md`; ingest, query, lint; good answers filed back | [Karpathy, LLM Wiki gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) | `4-know/`, `INDEX.md`, `kb-tidy` as a knowledge lint |
+| One short index of stable identifiers, ten items per level so each stays scannable | [Johnny.Decimal](https://johnnydecimal.com/) | `INDEX.md` one line per page; kept the numbered top level only |
+| Stable vs volatile files (project brief vs active context) | [Cline Memory Bank](https://docs.cline.bot/prompting/cline-memory-bank) | Card (rarely changes) vs `state.md` (every session) |
+| Each memory block has a description and a size limit | [Letta memory blocks](https://docs.letta.com/guides/agents/memory-blocks) | Purpose line on every page; line limits stay |
+| Recurring knowledge types in agent-read KBs: systems, people, decisions, gotchas, incidents, evidence for reviews | [obsidian-mind](https://github.com/breferrari/obsidian-mind), [Claudesidian](https://github.com/heyitsnoah/claudesidian), [Basic Memory](https://docs.basicmemory.com/concepts/knowledge-format) | The five `4-know/` folders; one template each |
+| Docs belong to an owned entity (a system), next to it | [Backstage TechDocs](https://backstage.io/docs/features/techdocs/) | `owner:` in the header; system pages link their decisions |
+| Small dated records, superseded rather than edited; large documents are never kept up to date | [Nygard, ADRs](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions) | One page per thing; `review:` cadence |
+| A brag document, updated every two weeks, turns the work log into review material | [Julia Evans](https://jvns.ca/blog/brag-documents/) | `1-me/brag.md` |
+| Imports don't save tokens; procedures go in skills; audit for contradictions | [Claude Code memory docs](https://code.claude.com/docs/en/memory) | `4-know/` pages load on demand, never imported |
+
 ## Not adopted, and why
 
 - **Remote skill bundles** (some templates fetch their skills from a URL each session): convenient, but the instructions could change under you.
 - **Load-everything memory banks** (Cline): every file every session.
 - **Spec-driven toolchains** (spec-kit, BMAD): good for features, heavier than a personal KB needs. They pair well with it.
+- **A knowledge graph behind MCP or vector search** (Basic Memory): powerful, but a server to run and trust. Plain markdown, an index and links do most of it.
+- **Hook-heavy "second brain" kits** (obsidian-mind: five hooks, eighteen commands): the upkeep should be a habit and a skill, not more automation.
+- **Full Johnny.Decimal IDs** (`21.03`): stable, but renames everything when the shape changes. Names by the thing, plus `INDEX.md`, are enough at this size.

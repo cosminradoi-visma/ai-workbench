@@ -18,7 +18,7 @@ own context, kept safely and cheaply.
 A private, per-person workbench. Four layers (`1-me`, `2-work`, `3-toolbox`, `0-meta`)
 plus a gitignored `inbox/`. The boot is under 60 lines and the read path is
 `NOW.md` → one `state.md` → indexes. Procedures live in local skills that load on demand.
-`kb_check.py` enforces a token budget and catches stale pages. A project kit connects any
+A token budget and stale-page checks (since ADR-006 done by `kb-tidy`, not a script) keep it lean. A project kit connects any
 code repo to its work item, and a personal kit sets safe defaults in `~/.claude/`.
 
 ## Why

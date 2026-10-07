@@ -1,8 +1,8 @@
-# Workbench configuration. Flat keys only (read by 0-meta/scripts/kb_check.py).
+# Workbench configuration, read by the kb-* skills. Flat keys only.
 owner: TODO-your-name
 language: en
 
-# Limits the health check enforces
+# Limits kb-tidy checks
 boot_budget_tokens: 2000    # what loads before your first message: CLAUDE.md + imports + profile
 now_max_lines: 40
 state_max_lines: 80

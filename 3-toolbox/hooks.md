@@ -1,63 +1,66 @@
 ---
-updated: 2026-10-02
+updated: 2026-10-07
 ---
 
-# Hooks
+# Hooks and guards, with nothing to run
 
-A hook is a command the harness runs at a fixed moment. It runs **outside the model**,
-so it always happens and costs no tokens. Reach for one whenever you catch yourself
-writing "always" or "never" in a prompt.
+This workbench ships **no scripts**. Every guard is a setting Claude Code itself enforces, so
+there is nothing to install, nothing to keep working on Windows, and nothing to review as code.
+`/permissions` and `/hooks` show what is active.
 
-Configured in `.claude/settings.json` (repo), `~/.claude/settings.json` (you), or a plugin.
-`/hooks` lists what is active.
+## Three kinds of guard
 
-## The events worth knowing
+| Kind | How it decides | Strength | Used for |
+|------|----------------|----------|----------|
+| **Permission rules** (`permissions.deny` / `ask`) | Claude Code matches the tool call against a pattern | A guarantee for what the pattern names | Secret files, force-push, `--no-verify`, installs, pushes, edits to agent config |
+| **A prompt hook** (`"type": "prompt"`) | A small, fast model reads the event against a rule in plain words | Very likely, not certain: a model's judgement. About a second per prompt | "A real-looking token in this prompt": no pattern can say that |
+| **A one-line check** (`"type": "command"`, written inline in the settings) | `grep` on the event | Exact for what it matches; milliseconds | No em-dashes in prose, through Write, Edit and the shell |
 
-| Event | When | Can block? | Typical use |
-|-------|------|-----------|-------------|
-| `SessionStart` | start, resume, after clear/compact | no; stdout goes into context | inject a fact, run a check |
-| `UserPromptSubmit` | before your prompt reaches the model | yes | stop pasted secrets or personal data |
-| `PreToolUse` | before a tool call | yes; can also `ask` | guard commands and files |
-| `PostToolUse` | after a tool call | feedback only | format, lint, scan the diff |
-| `Stop` | when the agent wants to finish | yes; keeps it working | "not done until tests pass" |
-| `PreCompact` | before compaction | yes | save state first |
+Tested on Claude Code 2.1.292, 7 Oct 2026:
 
-Exit code `2` blocks, and stderr goes to the model as the reason. For a softer touch,
-print JSON with `"permissionDecision": "ask"` and a reason.
+| What we tried | What happened |
+|---------------|---------------|
+| `cat .env` | denied by a `Read(**/.env)` rule, also through Bash; `grep -r` skipped `.env` too |
+| `git push --force` | denied, even when the user "authorised" it |
+| a fake `ghp_` token in the prompt | stopped 3 of 3 |
+| a harmless question about `.env` files | answered 2 of 2 |
+| a token in a prompt starting `synthetic:` | answered |
+| an em-dash in `README.md` | kept out 3 of 3, also when the agent tried `printf >> README.md` |
 
-## Recipes
+**Why the em-dash check is a line of `grep`, not a prompt hook:** the prompt-hook version let the dash
+through in half the runs, and the agent simply wrote the file through the shell instead. A pattern
+is exact, so the line catches both. It is the only thing in the workbench that executes, it lives
+inside `settings.json` (no file), and it needs `sh` and `grep`: macOS and Linux have them, and on
+Windows they come with Git for Windows, which Claude Code uses to run hooks. Without them it
+quietly does nothing.
 
-| Recipe | Where |
-|--------|-------|
-| Guard: block secret files, force-push naming main/master/prod*/release*, pipe-to-shell, file uploads, destructive SQL; ask on installs and agent-config edits | `project-kit/.claude/hooks/guard.py` |
-| Prompt guard: stop pasted tokens, private keys, real IBANs and CNPs | `project-kit/.claude/hooks/prompt_guard.py` |
-| House style: no em-dashes in prose the agent writes (only its new text, only prose files); it rewrites the line itself | `project-kit/.claude/hooks/no_em_dash.py` |
-| Stop switch and unattended fences (private paths, post budget) | `guard.py` + `.claude/STOP` + `.claude/unattended.json` |
-| KB health at session start | this KB's `.claude/settings.json` |
-| Format on edit | below |
-| Not done until tests pass | below |
+## What the kit has
 
-### Format on edit
+All in `project-kit/.claude/settings.json` (this workbench's own `.claude/settings.json` has the same hooks):
+
+| Guard | Kind | Rule |
+|-------|------|------|
+| No secret files | deny | `Read(**/.env)`, `.env.local`, `*.pem`, `*.key`, `id_rsa*`, `~/.ssh/**`, `~/.aws/**`, … |
+| No history rewrites, no skipped hooks | deny | `Bash(git push --force *)`, `Bash(git push -f *)`, `Bash(git commit * --no-verify*)` |
+| No `rm -rf` on `/` or `~` | deny | `Bash(rm -rf /*)`, `Bash(rm -rf ~*)` |
+| Ask first | ask | `git push`, installs (`npm install`, `pip install`, `dotnet add`), `sudo`, `curl`, `wget`, publish |
+| Agent config changes ask | ask | `Edit(./.claude/**)`, `Edit(./AGENTS.md)`, `Edit(./CLAUDE.md)`, `Edit(./.mcp.json)`, `Edit(./.github/workflows/**)` |
+| No secrets in prompts | prompt hook, `UserPromptSubmit` | real-looking tokens, keys, passwords in connection strings, IBANs, national IDs; `synthetic:` passes |
+| House style | one-line check, `PreToolUse` on Write, Edit, MultiEdit, Bash | an em-dash going into a `.md`, `.txt` or `.html` file is blocked with the reason; the agent explains, and rewrites when you say so |
+
+## The shape of a prompt hook
 
 ```json
-{ "hooks": { "PostToolUse": [{ "matcher": "Edit|Write", "hooks": [{ "type": "command",
-  "command": "jq -r '.tool_input.file_path' | xargs -r npx prettier --write --ignore-unknown" }] }] } }
+{ "hooks": { "UserPromptSubmit": [ { "hooks": [ { "type": "prompt", "timeout": 20,
+  "prompt": "Prompt guard: no secrets in prompts. Hook input: $ARGUMENTS ... Reply with JSON only: {\"ok\": true} or {\"ok\": false, \"reason\": \"...\"}" } ] } ] } }
 ```
 
-Swap in `black`, `gofmt -w`, `dotnet format` or whatever the repo uses.
+`$ARGUMENTS` is the event as JSON. Say exactly what passes and what fails, and fix the reply to one of
+two JSON lines: a reply that isn't clean JSON counts as a pass.
 
-### Not done until tests pass
+## Limits, said plainly
 
-```json
-{ "hooks": { "Stop": [{ "hooks": [{ "type": "command",
-  "command": "jq -e '.stop_hook_active' >/dev/null && exit 0; npm test --silent >/dev/null 2>&1 || { echo 'Tests fail. Fix them before finishing.' >&2; exit 2; }" }] }] } }
-```
-
-`stop_hook_active` is true when the agent is already continuing because of this hook. Exiting
-then prevents an endless loop.
-
-## Rules of thumb
-
-- Fast (well under a second) and quiet. `SessionStart` output costs context, so print problems only.
-- Block with a reason the model can act on: "ask the user to run this themselves."
-- Hooks run with your permissions on every call. Review them like code, especially in repos you cloned.
+- A deny rule matches what it names. `git -C . push --force` is a different command, and a password in
+  `config.py` is not in a secret *file*; the sandbox (`personal-kit/settings.strict.json`) is the wall for Bash.
+- A prompt hook can be wrong both ways. It is a speed bump with good judgement, not a lock.
+- Told about a block, an agent may offer to get around it. That is why the rules are one layer, and why you read the diff.

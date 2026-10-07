@@ -18,8 +18,8 @@ Must-hold rules are enforced in layers that don't depend on the model agreeing:
 1. **Permissions** (`deny` / `ask`): no secret files, ask before push and agent-config edits,
    bypass mode disabled.
 2. **Sandbox** (optional strict profile): the real boundary for Bash. Deny rules only match command text.
-3. **Hooks:** a `PreToolUse` guard and a `UserPromptSubmit` guard that stop secrets and
-   real IBANs and CNPs at the door.
+3. **Hooks:** a prompt hook stopping secrets, IBANs and national IDs in prompts (a model's judgement:
+   likely, not certain), and a one-line em-dash check inline in the settings (ADR-006: no script files).
 4. **Review:** a human reads every diff before it merges. You own what you merge.
 
 Prose in `safety.md` explains *why*, so people make good calls where no rule reaches.

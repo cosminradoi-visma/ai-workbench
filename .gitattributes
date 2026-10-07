@@ -1,10 +1,6 @@
-# Hooks and scripts must keep LF line endings, even on Windows checkouts,
-# or `sh` fails on the carriage returns and the guards silently stop running.
+# Keep line endings stable across Windows, macOS and Linux checkouts.
 * text=auto
-*.sh text eol=lf
-*.py text eol=lf
-py text eol=lf
-*.json text eol=lf
 *.md text eol=lf
-*.example text eol=lf
-*.env text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.sh text eol=lf
