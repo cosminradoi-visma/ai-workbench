@@ -1,0 +1,5 @@
+# FAKE demo config for the guard playground. Nothing here is real.
+service: playground-api
+database:
+  host: localhost
+  password: synthetic-not-real   # the honest miss: a password in a file that isn't a "secret file"

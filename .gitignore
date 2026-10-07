@@ -11,6 +11,7 @@ inbox/*
 .env
 .env.*
 !.env.example
+!3-toolbox/playground/.env
 *.pem
 *.key
 

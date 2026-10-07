@@ -83,8 +83,9 @@ install works without admin). macOS: `xcode-select --install`. Linux: your packa
      gh repo create my-workbench --private --template cosminradoi-visma/ai-workbench --clone
      mv my-workbench ~/workbench
      ```
-2. **Open Claude Code there and type `/kb-setup`.** A short interview fills in your profile, your
-   first work item and `NOW.md`, and offers safe personal defaults for `~/.claude/`.
+2. **Open Claude Code there and type `/kb-setup`.** Your agent looks at how you already work (your repos,
+   your own git history, the rules you already wrote down), proposes how to organise it, writes it after
+   your yes, and shows you a card about yourself. Type `/add-dir <your code folder>` when it asks.
 3. **Connect your main repo:** from the workbench, type `/kb-link-repo` and give it the repo path.
 4. **End your next working session with "capture".** That's the habit that makes it work.
 
@@ -127,6 +128,9 @@ With a slash, you type it. Without one, you just say it in plain words and the a
 | `kb-tidy` | Weekly: the checks, then "still true?" page by page |
 | `kb-score` | "Score my workbench": seven drawers, and the next step |
 | `kb-vet` | Before installing any skill, plugin, hook or MCP server |
+| `interview` | "Interview me": it asks, one question at a time, until the task is clear; then writes the spec |
+| `standup` | "Standup": yesterday, today, blockers, from your commits and `NOW.md`, ready to paste |
+| `wrap-up` | "Wrap up": today's impact logged, brag-worthy items proposed, tomorrow's first step set |
 
 In each linked repo you also get a **`reviewer`** agent ("review this") and a **golden-tasks runner**
 (`.claude/golden/`, run with `/golden-run`): drawer 7.

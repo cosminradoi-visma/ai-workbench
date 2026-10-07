@@ -19,6 +19,7 @@ A weekly ten minutes keeps the KB worth reading.
    - **Never in here:** search for likely secrets (`ghp_`, `github_pat_`, `sk-`, `AKIA`, `xox`, `BEGIN` … `PRIVATE KEY`,
      `password=` in a connection string), and for hidden Unicode (zero-width or bidirectional characters).
      Show the line and remove it. For a real secret, tell the user to rotate it now: it is in git history.
+     Skip `3-toolbox/playground/`: its secrets are fake on purpose, for trying the guards.
    - **Skills:** each `description:` under `skill_description_max` characters.
 2. Report those in one short list before moving on.
 3. **Read the knowledge, not just the files** (the check can't do this part):
