@@ -112,7 +112,7 @@ You approve that send yourself. Check Slack: the message is in your DM with your
 ## 6 · First run
 
 In Slack, in your DM with yourself, write a question and react 🤖. For weather-api, for example:
-`Why does /forecast?city=Oslo say 52°F when it's 11.6°C?` Wait 30 seconds (Slack takes that long to index a
+`Why does /forecast?city=Oslo say 52°F on 8 Oct when it's 11.5°C?` Wait 30 seconds (Slack takes that long to index a
 reaction), then:
 
 > Run `sh ~/w3/my-bot/tick.sh` and tell me what happened, from `log/runs.log`.
