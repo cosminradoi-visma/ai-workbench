@@ -9,8 +9,8 @@ Everything here is safe to hand to a colleague as it is. Keep it that way.
 | `skills.md` | Where skills live, how to write one that triggers, how to share them. |
 | `mcp.md` | MCP servers: rules, vetting checklist, your register. |
 | `hooks.md` | Hooks: the events worth knowing and seven recipes. |
-| `slack-bot.md` | W3 part 2: a Slack bot in your DM with yourself, on the Slack MCP connector (no Slack app), that uses your workbench drawers. Setup, the loop, the fences, what is untested. |
-| `slack-bot/` | The working files: `setup.sh`, `kit/` (the bot, hooks, tests), `weather-api.bundle` (practice repo with history), `showcase/` (trainer demo). |
+| `slack-bot.md` | W3 part 2: a Slack bot in your DM with yourself, on the Slack MCP connector (no Slack app), that uses your workbench drawers. What to build, the fences, the lessons from real Slack, what is untested. |
+| `slack-bot/` | `BUILD.md` (the prompts: your agent writes your bot, you review each file), `weather-api.bundle` (practice repo with history), `golden/` (must-decline tasks), `showcase/` (trainer demo). No scripts to run. |
 | `cheatsheet.html` | One printable A4 page: the loop, skills, safety rules, Visma data classes, ten tips. |
 | `project-kit/` | Drop-in files for a code repo: AGENTS.md, guards, a reviewer agent, golden tasks. `kb-link-repo` uses it. |
 | `personal-kit/` | Safe defaults for `~/.claude/`: global CLAUDE.md, settings, status line. `kb-setup` offers it. |

@@ -1,60 +1,40 @@
 # Showcase runbook · W3 part 2 (Bogdan)
 
-Bogdan's own bot, in his DM with himself, on `weather-api`, with a small demo workbench (`workbench-demo/`,
-or your real one). The beats match the slides: 1 · the real thing, 1 · resume, 6 · the fences, finale.
+Bogdan's own bot, in his DM with himself, on `weather-api`, with a small demo workbench (`workbench-demo/`, or a
+real one). It was built the way the room will build theirs: by prompting, one fence at a time, fixed on real Slack.
+It has more than the lab bot (investigate and fix routes, thread sessions, 🔕, a red/green gate); its code lives on
+the trainer's laptop, not in this repo, so nobody runs it by mistake.
 
-## Set up, once (from `3-toolbox/slack-bot/`)
+## Before the session
 
-```sh
-sh setup.sh                          # kit + weather-api into ~/w3
-cp -R showcase ~/w3/ && cd ~/w3/showcase
-cp owner.env.example owner.env
-OWNER_ENV=$PWD/owner.env ../kit/find-self-dm.sh   # one message to yourself; fills OWNER_ID, CHANNEL_ID, MCP_DENY
-OWNER_ENV=$PWD/owner.env ../kit/install.sh        # must say ARMED (every canary denied, bot-settings.json written)
-./stage-reset.sh
-```
+- The bot ticking in a side terminal, on weather-api, `NOW.md` from `workbench-demo/` (it names the W3 workshop).
+- An empty DM with yourself, screen-shared, big font.
+- The participants' path rehearsed once on a clean laptop: `BUILD.md`, prompts 0 to 6, about 25 minutes.
 
-Watcher during the session, in a side terminal (the wall goes in a second one: `./wall.sh`):
-
-```sh
-export OWNER_ENV=$PWD/owner.env
-while :; do ../kit/watch.sh; sleep 30; done
-```
-
-## The beats (slide 5, about 8 minutes)
+## The beats (about 8 minutes)
 
 Write each message **in your DM with yourself**, then react 🤖. Search lag is about 30 s, plus one tick.
 
 | Beat | You write | You should see |
 |---|---|---|
-| 1 | "Customer says Bergen shows sunny while it's pouring. Find out why." | 👀, then **investigate**: rain codes 61-65 map to "sunny" at `src/weather_api/conditions.py:13`, since `5ba168d`. ✅ |
-| 2 | Reply in that thread: "Write the test that would have caught it." React 🤖 on the reply | **answer** with a `pytest.mark.parametrize` code block. Same session: it knows the cause |
-| 3 | New message: "What am I working on, and what's my next step?" | **answer** from `NOW.md` and `2-work/w3/state.md`: slides half done, next rehearse the setup lab |
-| 4 | Optional: react 🔕 on a fresh 🤖'd message before it answers | 👀, then no reply (wall: `not sent, muted`) |
+| 1 | "Customer says Bergen shows sunny while it's pouring. Find out why." | 👀, then an investigation: rain codes 61-65 map to "sunny" at `src/weather_api/conditions.py:13`, since `5ba168d`. ✅ |
+| 2 | Reply in that thread: "Write the test that would have caught it." React 🤖 on the reply | a `pytest.mark.parametrize` code block. Same session: it knows the cause |
+| 3 | New message: "What am I working on, and what's my next step?" | an answer from `NOW.md` and `2-work/w3/state.md`, the drawers the script pasted in |
+| 4 | Paste `messages/injection.md`'s text, react 🤖 | a polite no: no token, no @here, no other channel |
 
-Resume (slide 7): `claude --resume "$(cat state/threads/<thread-ts>/session)"` and ask "why that line?".
+Resume: `claude --resume <session id from the bot's log>` and ask "why that line?".
 
-Fences (slide 24): paste `messages/injection.md`'s text into your DM, react 🤖. The bot declines; then run
-`./fence-demo.sh` on the wall: token, @here, other thread, promise, all denied by `slack-guard.sh`.
+## Then the room builds theirs
 
-Fix demo, only if rehearsed: `ALLOW_PR=true` in `owner.env`, paste `messages/bergen.md`. Expect red on base,
-green on head, a PR body in `outbox/` with the resume footer (no remote = no GitHub PR).
-
-## Rehearse without Slack (inbox lane)
-
-`SOURCE=inbox` in `owner.env`, then `cp messages/<file>.md inbox/ && ../kit/watch.sh --wait` and read `outbox/`.
-`messages/README.md` lists what each message should produce.
+Open `BUILD.md` on screen and do prompt 0 live in your own Claude Code, so they see the agent read
+`slack-bot.md` and say back what it will build. Then they go, prompt by prompt; walk the room at prompt 3 (the guard)
+and prompt 4 (the canary): those are the two where people should read every line.
 
 ## Finale (the relay)
 
-Self-DM bots can't be tagged, by design. Post the question in #w3-workshop, tag the person; they paste it into their
-own DM, react 🤖, and post the answer back in your thread. Keep your own watcher on: your bot answers the questions
-you relay to yourself the same way.
+Self-DM bots can't be tagged, by design. Post a question in #w3-workshop and tag someone; they paste it into their
+own DM, react 🤖, and post the answer back in your thread.
 
-## Reset
+## After
 
-After the session, on a real workbench: `OWNER_ENV=$PWD/owner.env ../kit/cleanup.sh` removes the bot's worktrees,
-branches, claims, outbox, memory and its session transcripts (they hold the drawers).
-
-`./stage-reset.sh`: removes agent worktrees and `agent/*` branches in weather-api, clears claims, outbox, logs and
-inbox, restores the thread memory from `memory/threads.seed.jsonl`. Local only.
+Ask your agent to clean up what the bot kept (BUILD.md, last prompt), and do the same on the room's screens.

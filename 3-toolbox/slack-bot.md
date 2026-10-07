@@ -1,7 +1,7 @@
 ---
-updated: 2026-10-06
+updated: 2026-10-07
 status: draft
-verified: claude.ai Slack connector, Visma workspace, the owner's self-DM (5–6 Oct); the hardening (bot-settings.json, STOP hook, install canaries) on Linux/WSL2, Claude Code 2.1.288 (6 Oct). Untested items are marked [T].
+verified: the design and the lessons, on the claude.ai Slack connector, Visma workspace, the trainer's self-DM (5–7 Oct). The build prompts, run in order by a fresh agent (7 Oct). Untested items are marked [T].
 ---
 
 # A Slack bot that uses your workbench (W3, part 2)
@@ -11,188 +11,148 @@ You write to yourself in Slack, react 🤖, and your bot answers in the thread, 
 `weather-api` practice repo or on your own repo.
 
 No Slack app and no bot token to get approved: it runs on your laptop through the **Slack MCP connector**
-(`/mcp` shows `claude.ai Slack`), with your own login. Code and the trainer's demo: [`slack-bot/`](slack-bot/).
+(`/mcp` shows `claude.ai Slack`), with your own login.
+
+**You don't run our code: there is none.** You build the bot by prompting your own agent, one file at a time, and
+read each file before it runs: [`slack-bot/BUILD.md`](slack-bot/BUILD.md). This page is the context your agent
+reads first: what to build, which fences, and what we learned building the trainer's bot on real Slack.
 
 **Never paste customer data, payroll or personal data into your DM for the bot.** Practise on weather-api's bug
 reports, your own code questions and your own notes.
 
-## Set it up (about 15 minutes)
+## What you build
 
-At break 1, check your laptop (changes nothing, about a second):
+Four files and two tests in a folder of your own (`~/w3/my-bot`), about 250 lines plus the tests:
 
-```sh
-cd 3-toolbox/slack-bot
-sh setup.sh --check              # ✓/✗ for git, jq, uv, python3, claude >= 2.1.259, logged in, the Slack connector
-sh setup.sh --check --live       # the same, plus one real one-turn `claude -p` call on Haiku (a fraction of a cent)
-```
+| File | Job |
+|---|---|
+| `tick.sh` | one round: find your 🤖s, answer each one. Holds your IDs and paths at the top (they are not secrets) |
+| `hooks/slack-guard.sh` | a PreToolUse hook: the only Slack calls the bot may make |
+| `bot-settings.json` | what the bot's runs may read and run, and the hook |
+| `prompts/answer.md` | how it answers |
+| `tests/guard-test.sh` | fake inputs into the guard: what must pass, what must be denied |
+| `tests/canary.sh` | the bot, with its settings, tries to read your secrets and drawers: every try must be denied |
 
-It exits non-zero if a required line is ✗. The Slack connector and the OS sandbox are reported but not required
-(without Slack you use the inbox lane; without the sandbox the fences below still hold, see "The sandbox").
+The loop, each tick (every minute, from `while :; do sh tick.sh; sleep 60; done`):
 
-Then, from your workbench clone:
-
-```sh
-cd 3-toolbox/slack-bot
-sh setup.sh                      # kit + weather-api (with its git history) into ~/w3, both test suites, your name
-sh setup.sh --repo ~/code/mine   # or your own repo: run /kb-link-repo for it first (part 1)
-cd ~/w3
-./kit/find-self-dm.sh            # sends you ONE message; fills OWNER_ID, CHANNEL_ID, SELF_DM=true, MCP_DENY
-./kit/install.sh                 # deny rules + bot-settings.json + a self-test; arms the bot only if every canary is denied
-./kit/watch.sh --wait            # one tick
-```
-
-Then in Slack, in your DM with yourself: write a question, react 🤖, tick again (or keep it running:
-`while :; do ./kit/watch.sh; sleep 60; done`). Within a minute or two: 👀, one signed reply, ✅.
-
-Needs: Claude Code v2.1.259 or later, the Slack connector connected in `/mcp` (only for the Slack lane), `git`, `jq`, `python3`, and `uv` for weather-api. Check all of it with `sh slack-bot/setup.sh --check`.
-`setup.sh` fills `OWNER_NAME` and `SIGNATURE` ("🤖 <name>'s agent:") from `git config user.name`.
-Workshop defaults in `kit/owner.env`: `WORK_MODEL=sonnet`, `WORK_BUDGET_USD=1` per message, `THREAD_BUDGET_USD=3`
-per thread, `MAX_WORKERS=2`, `ALLOW_PR=false`, `ALLOW_PUSH=false`. Your own repo: set `TEST_CMD` / `TEST_ALL_CMD`
-if it doesn't use `uv run pytest`, and give its `AGENTS.md` an `## Operate` section (start, stop, check, test), like weather-api's.
-Windows: an `owner.env` saved with CRLF line endings is fine (the scripts strip `\r`), and weather-api ships a
-`.gitattributes` that keeps its scripts LF.
-
-## The loop
-
-1. **Watch.** One search per tick: `in:<#your-DM> from:<@you> hasmy::robot_face: after:YYYY-MM-DD`.
-   `hasmy::` returns only messages *you* reacted to, so Slack checks it is you. A hook pins the search to exactly
-   that query, whatever the model types, and the script reads the hits from Slack's raw response.
-2. **Claim.** 👀 on the message. One claim per reacted message, one worker per thread at a time, at most
-   `MAX_WORKERS` (2) at once: a burst of 🤖s waits for the next tick.
-3. **Decide.** A read-only run reads the **whole thread** (the message you reacted to is the task, everything
-   before and after is context) and your drawers. It picks a route. Read-only means: the source, `git log/show/diff/blame`,
-   `ls`. No tests, no scripts, no edits, no `git --output`, and no web while your drawers are in the context.
-4. **Act.** A second run, same session, gets only that route's tools. Except **fix**: it starts a **fresh session**
-   that never saw your drawers, with only the task, the route and a short task summary from triage, and no web tools.
-5. **Answer** in the thread, formatted for Slack, signed `🤖 <name>'s agent: <route>`, then ✅.
-
-A 🤖 on a later message in the same thread continues the same session, so the bot remembers what it found.
-
-| Route | When | Rule, checked by the script |
-|---|---|---|
-| answer | any question or task a reply can complete | claims about the repo cite a file that exists (or a workbench file) |
-| investigate | looks like a bug, not proven | no edit tools; may run the repo's tests (pytest flags that write files are denied) |
-| fix | a bug it can prove (off unless `ALLOW_PR=true`) | fresh session; the new test fails on the old code and passes on the fix, full suite green, diff ≤ 200 lines / 5 files. Push and `gh pr create` only with `ALLOW_PUSH=true` |
-| decline | only when it would leak data | other Slack conversations, files outside the repo, personal files, secrets |
-| escalate | security, customer data, production | mentions the owner only, proposes nothing |
-
-Your 🤖 means "do it": it approves the task, never a data leak.
+1. **Stop?** A `STOP` file in the bot folder or `<repo>/.claude/STOP` (the same file part 1's `guard.py` uses): do nothing.
+2. **Find.** One small run (Haiku) searches Slack. The guard replaces whatever query it types with exactly
+   `in:<#your-DM> from:<@you> hasmy::robot_face: after:<yesterday>`. `hasmy::` returns only messages **you**
+   reacted to, so Slack itself checks that it is you.
+3. **Claim.** Each hit's ts goes into `done.txt` **before** any work, so a crash never answers twice.
+4. **Answer.** One run per hit, in the repo, read-only: 👀 on your message, read the whole thread (the message you
+   reacted to is the task, everything before and after is context), one signed reply in the thread, ✅.
 
 ## Why your DM, and how the drawers get in
 
 Rule 5 of [`safety.md`](safety.md): never private data, untrusted content and a way out in one session.
-Your drawers are the private data. The bot holds them anyway, so here is the honest version of why that is allowed.
+Your drawers are the private data. The bot holds them anyway, and this is why that is allowed.
 
 **The self-DM makes the untrusted-content leg smaller, it does not remove it.** Nobody else can post in your DM
-with yourself, but other people's words still get in: a message you forward or paste, a link that unfurls, a web
-result, an app or integration that posts as you. So the bot treats every message as data, and the exception holds
-**only because the way out is closed**:
+with yourself, but other people's words still get in: a message you forward or paste, a link that unfurls. So the
+bot treats every message as data, and the exception holds **only because the way out is closed**:
 
-- posts go only to the claimed thread in that DM, only the text the script approved (a hook checks every Slack call);
-- no WebSearch or WebFetch in any run that has the drawers in its context (triage, answer, investigate in that session);
-- the fix route, which executes code, starts a fresh session without the drawers;
-- the **model cannot read the workbench at all**: the **script** reads `NOW.md`, `1-me/profile.md`, `how-i-work.md`,
-  `glossary.md` and, with `WORK_ITEM`, one `2-work/<item>/state.md` (capped at 6 KB each, 20 KB in total) and hands
-  them in. `bot-settings.json` denies the model every read of `WORKBENCH_DIR`, and `install.sh` proves it (below).
+- the guard lets it post only in that DM, only in the claimed thread, signed, with no mentions and no token shapes;
+- no WebSearch or WebFetch in any run that has your drawers;
+- **the model never reads the workbench**: `tick.sh` reads `NOW.md` and `1-me/profile.md` and pastes them into the
+  prompt; `bot-settings.json` denies the model every read of the workbench folder.
 
-The drawers go in only in your own lanes: the self-DM (`SELF_DM=true`) and the file inbox (`SOURCE=inbox`).
-`USE_WORKBENCH=false` turns them off. **Team-channel mode** (`SOURCE=slack`, `SELF_DM=false`) brings the untrusted
-leg back in full, so it never gets the drawers. It is not part of the lab.
+A bot in a team channel brings the untrusted leg back in full: it never gets the drawers. That is not part of the lab.
 
-## Fences, and where each lives
+## Fences
 
-| Fence | How |
-|---|---|
-| Only you start it | the pinned `hasmy::` search, plus the participants check in self-DM |
-| Anyone can stop it, even mid-run | 🔕 on the thread (checked before every post), `touch kit/PAUSED`, or `touch .claude/STOP` in the repo (the same file `guard.py` uses). A hook on **every tool call** (`hooks/stop-guard.sh`) checks both files, also from inside a worktree, so a run stops at its next step |
-| Not your personal setup | every bot `claude -p` run uses `--setting-sources project`: your own allow rules and hooks in `~/.claude` do not apply |
-| What it may read | `bot-settings.json` (written by `install.sh`, real paths): `blockReadsOutsideWorkingDirectories`, read denies on `WORKBENCH_DIR`, `~/.claude` (also the bot's own transcripts), `~/.ssh`, `~/.aws`, `~/.azure`, `~/.kube`, `~/.config`, `owner.env`; in the repo `.env*`, `*secret*`, `.claude/**`. On a repo linked with `kb-link-repo`, `guard.py` adds `private_paths` and the post budget from `unattended.json` |
-| What it may write | triage and answer: nothing. Investigate: nothing (it runs tests). Fix: files in its worktree. `git --output` and `--ext-diff` are denied everywhere; `git commit`, `git push`, `gh` by the model are denied |
-| What a post may say | a PreToolUse hook on every Slack tool (send, schedule, DM, canvas): this DM, the claimed thread (`thread_ts` and `message_ts`), no `reply_broadcast`, exactly the reply the script approved (no approved reply = no send), signed, no mentions except you, no secrets (token shapes, AWS keys, Slack webhooks, JWTs, values from the repo's `.env`), no promises. Hooks fail closed: a deny is exit 2, and no `jq` means deny |
-| Edited after you reacted | inbox lane: declined by the script. Slack MCP lane: **prompt-only**, triage is told to decline an edited task, nothing checks it in code. React again after an edit |
-| Only Slack loads | `MCP_DENY` (written by `find-self-dm.sh`) removes your other connectors from the bot's runs; act runs load no connector at all |
-| Money | `--max-budget-usd` on every run from what is left: `WORK_BUDGET_USD` per message and `THREAD_BUDGET_USD` per thread, retries, posts and reactions included. A resumed session reports its whole total, so the script charges per-run deltas |
-| Tested before trusted | `install.sh` arms the bot only if a Haiku run with exactly these settings is denied every canary: Read and `cat` of two secrets in the repo (six probes in all with the next ones), Read and `cat` of a file in your workbench, a token file outside the repo, and `git log --output=<file>` |
+| Fence | In your bot | How |
+|---|---|---|
+| Only you start it | yes | the pinned `hasmy::` search with `from:<@you>`, in your DM |
+| What it may say, and where | yes | `slack-guard.sh` on every Slack tool: search pinned, read only the claimed thread, 👀/✅ only, send only to the claimed thread, signed, no mentions, no `<!here>`, no links, no token shapes. Everything else denied (exit 2). No `jq` = deny |
+| What it may read | yes | `bot-settings.json`: denies `.env*`, `*secret*`, the workbench, `~/.ssh`, `~/.aws`, `~/.config`, `~/.claude`; no edits, no web |
+| Not your personal setup | yes | every bot run uses `--setting-sources project`: your own allow rules and hooks in `~/.claude` don't apply |
+| Anyone can stop it | yes | `touch ~/w3/my-bot/STOP` or `touch <repo>/.claude/STOP` |
+| Caps per run | yes | `--max-turns` and `--max-budget-usd` on every run |
+| Never twice | yes | claim in `done.txt` before answering |
+| Proved before trusted | yes | `tests/guard-test.sh`, and `tests/canary.sh`: the bot, with its settings, tries Read, `head`, `sed` and `grep` on `.env`, `NOW.md` and `~/.ssh`, and must be denied every time |
+| 🔕 silences a thread | stretch | `slack_get_reactions` on the thread before the reply |
+| One session per thread | stretch | `--session-id` on the first 🤖, `--resume` on the next one in that thread |
+| Hits from Slack, not from the model | stretch | a PostToolUse hook saves the raw search result; the script takes the hits from it |
+| Only Slack loads | stretch | `--disallowedTools mcp__<server>` for each of your other connectors |
+| Investigate, fix, PR | trainer's bot | more routes, a red-on-old/green-on-new gate, worktrees. Not in the lab |
 
-### The fix route executes code
+## What we learned on real Slack
 
-Investigate runs the repo's tests and fix writes a test and runs it. Tests are code: whatever is in `conftest.py`
-or the test file runs on your laptop with your user's rights. The permission rules decide which commands the model
-may start; they cannot see what a Python process does once it runs. **Where the OS sandbox is available it is the
-real boundary**: `bot-settings.json` turns it on (`sandbox.enabled`, no unsandboxed retry, no allowed network
-domains, reads outside the working directories blocked). It needs macOS, or Linux/WSL2 with `bubblewrap` **and**
-`socat`; native Windows has none. Without it (`setup.sh --check` tells you) the bot's commands run unsandboxed and
-the fences above are what you have. Keep `ALLOW_PR=false` unless you are watching.
+Each line cost a failed run. Give them to your agent with the build prompts.
 
-## On Windows
-
-The kit is shell scripts, so it needs the shell that comes with **Git for Windows** (which Claude Code needs
-anyway). Easiest: open **Git Bash** and run every command in this page exactly as written. In **PowerShell**:
-
-| Linux, macOS, Git Bash | Windows PowerShell |
-|------------------------|--------------------|
-| `sh setup.sh` · `sh setup.sh --repo ~/code/mine` · `sh setup.sh --check` | `& "$env:ProgramFiles\Git\bin\sh.exe" setup.sh` (same flags) |
-| `cd ~/w3` | `cd ~\w3` |
-| `./kit/install.sh` · `./kit/watch.sh --wait` | `& "$env:ProgramFiles\Git\bin\sh.exe" ./kit/install.sh` (same for `watch.sh --wait`) |
-| `echo "Fahrenheit too?" > kit/inbox/q1.md` | `"Fahrenheit too?" \| Set-Content kit\inbox\q1.md` |
-| `cat kit/outbox/q1.md` | `Get-Content kit\outbox\q1.md` |
-| `cat kit/state/threads/<ts>/session` | `Get-Content kit\state\threads\<ts>\session` |
-| `tail -1 kit/log/runs.jsonl \| jq -r .session` | `Get-Content kit\log\runs.jsonl -Tail 1 \| jq -r .session` |
-| `claude --resume <id>` · `claude --from-pr 42` | the same |
-| `touch kit/PAUSED` | `New-Item kit\PAUSED` |
-
-PowerShell 5.1 (the default) has no `&&`: run commands one by one, or join them with `;`.
-[T] The kit has not yet been run end to end on native Windows.
+- **Connector tools are deferred.** With many tools loaded a run sees only their names: it must call ToolSearch
+  (`select:<tool>`) before it can use one. Haiku told only "search Slack" didn't, returned no hits, and the tick
+  looked healthy. Say "load it with ToolSearch first", and log "never searched" apart from "nothing found".
+- **DMs need `slack_search_public_and_private`.** `slack_search_public` doesn't see your DM.
+- **The search finds a reaction about 30 s after you add it.** `after:` takes a date and excludes it: use yesterday.
+- **Replace the query, don't check it.** Haiku rewrote `from:<@U…>` and a strict check denied every tick. A
+  PreToolUse hook can return `permissionDecision: "allow"` with `updatedInput`, which **replaces the whole input**.
+- **Search results carry "context" messages** (indented, before and after each hit). Their ts are not hits; only
+  the unindented `Message_ts:` lines are. The model once reported 0 hits when Slack had 1: the stretch fence reads
+  the raw result.
+- **The thread is in the permalink**: `?thread_ts=<first message>`. A reply's own ts is the task; the thread's first
+  message is what `slack_read_thread` and `thread_ts` need.
+- **The connector can't delete, edit or remove a reaction.** So no "on it" message: 👀 when picked up, ✅ when
+  answered. Adding the same reaction twice succeeds silently.
+- **A link in a reply is a way out.** Slack fetches it to show a preview, so data in its query string leaves.
+  The guard denies `http` in replies; cite files as `path:line`.
+- **Slack drops the connection now and then.** A missing ✅ is usually that: retry the reaction once.
+- **`slack_send_message` takes standard markdown** (`**bold**`, `` `code` ``, code blocks) and converts it. Slack adds
+  "*Sent using* Claude" to each post.
+- **Name the connector.** With two Slack connectors (claude.ai and a company gateway) the agent may pick the other
+  one, and your guard matches `mcp__claude_ai_Slack__` only.
+- **Every connector you have loads into each run.** With about 200 tools, one run spent its budget before answering.
+  The stretch fence turns the others off.
+- **Don't use `--bare`**: it skips your claude.ai login. `--setting-sources project` keeps your settings out and the
+  connector still loads (checked on 2.1.288). Plugins you installed still load their hooks (seen on 2.1.292):
+  `dontAsk` denies their tools, but check what they inject.
+- **`git log --output=<file>` writes a file** even under `Bash(git log *)`: deny `--output`. `git diff --no-index`
+  reads any file on disk, and `git show HEAD:.env` reads a committed one: deny those too.
+- **`git log -p` prints a committed secret without naming the file**, and no rule can catch that. The guard's token
+  check is the last net. Don't point the bot at a repo with real secrets in its history (weather-api's are fake).
+- **Read-only shell commands run without an allow rule.** The bot's `cat`, `sed` and `grep` ran in the repo though
+  only `git` and `ls` were allowed: Claude Code approves read-only commands itself. The Read denies still blocked
+  `head`, `sed` and `grep` on `.env`, the workbench and `~/.ssh` (12 of 12, 2.1.292). Test it with a control file.
+- **A canary only counts if the settings deny it.** A model that refuses to read `.env` because `AGENTS.md` says so
+  proves nothing: tell it to call the tool, and check `permission_denials` in the JSON output.
+- **Workbench guards block `.env` names**, rightly. The bot's IDs and paths are not secrets: keep them at the top of
+  `tick.sh`.
+- **Headless sessions don't show in `claude --from-pr`'s picker.** Log the session id and use `claude --resume <id>`.
 
 ## Check what it did
 
-Every thread has one session: `claude --resume "$(cat kit/state/threads/<thread-ts>/session)"`, then ask "why?".
-A fix has its own fresh session; the PR footer and `log/runs.jsonl` (`fix_session`) carry its `claude --resume`.
-Same machine only. `claude --from-pr` lists sessions you started interactively; unattended `claude -p` sessions
-are left out of the picker.
+`log/runs.log` has one line per run with its session id: `claude --resume <id>`, then ask "why?". Same machine only.
 
 ## After the lab
 
-`./kit/cleanup.sh` removes what the bot kept: the worktrees and `agent/*` branches in the repo, claims, threads,
-witness files, outbox, inbox, logs, the thread memory, and the bot's own session transcripts under
-`~/.claude/projects` (they contain your drawers). It asks first; `--yes` skips the prompt, `--days N` keeps the
-last N days. `owner.env`, `bot-settings.json` and the armed state stay.
+Ask your agent (BUILD.md, last prompt) to delete `done.txt`, `log/` and the bot's session transcripts under
+`~/.claude/projects` for the repo folder: they contain your drawers.
+
+## On Windows
+
+Use **Git Bash** (it comes with Git for Windows, which Claude Code needs) and the prompts work as written.
+In PowerShell, run the bot with `& "$env:ProgramFiles\Git\bin\sh.exe" tick.sh`. [T] Not yet run end to end on Windows.
 
 ## What's in `slack-bot/`
 
 | Path | What |
 |---|---|
-| `setup.sh` | preflight (`--check`), one-time setup, weather-api or `--repo` |
-| `kit/` | the bot: `watch.sh`, `work.sh`, `install.sh`, `cleanup.sh`, `find-self-dm.sh`, `slack-check.sh`, hooks, prompts, schemas, tests. `kit/README.md` for internals |
+| `BUILD.md` | the prompts, in order |
 | `weather-api.bundle` | the practice repo with its history (`git clone weather-api.bundle`); six planted bugs, reports in `bugs/` |
-| `weather-api/` | the same repo as files, to browse here (with `.env.example` in place of the bundle's fake `.env`) |
-| `showcase/` | the trainer's demo: `SHOWCASE.md` runbook, messages, a demo workbench, `stage-reset.sh`, `fence-demo.sh` |
-| slides | Bogdan presents the bot from his own laptop and deck; they are not in this repo |
-
-Practise without Slack: `SOURCE=inbox` in `kit/owner.env`, drop a message file into `kit/inbox/`, read `kit/outbox/`.
-Your drawers are used there too. That is also the lane for Codex and Copilot users (no Slack connector there).
+| `weather-api/` | the same repo as files, to browse here |
+| `golden/` | must-decline tasks for a repo that runs a bot (`kb-link-repo` copies them) |
+| `showcase/` | the trainer's demo: `SHOWCASE.md`, the messages, a demo workbench |
 
 ## Tested and not
 
-- Works on the owner's account, self-DM: the connector under `claude -p --permission-mode dontAsk` searches, reads,
-  reacts and replies in a thread; `hasmy::robot_face:` returns only the reacted message, about 30 s after the reaction;
-  threads (a reacted reply is the task, the whole thread is context, one session per thread); 👀/✅, with a retry when
-  Slack drops the connection; answers from the workbench drawers in self-DM; `find-self-dm.sh`; `setup.sh` (both paths).
-- Checked 6 Oct, Claude Code 2.1.288, Linux/WSL2: the claude.ai Slack connector's tools are still there under
-  `--setting-sources project` (all 27 `mcp__claude_ai_Slack__*` tools, loaded as deferred tools; the `init` event lists
-  no MCP servers because claude.ai connectors connect after it). `install.sh` on weather-api with a real workbench:
-  all six canaries denied, ARMED, $0.03. The STOP hook blocked a live run's first tool call. Without the
-  `git --output` deny, `git log --output=<file>` under `Bash(git log *)` does write the file.
-  `kit/tests/slack-lane/run.sh` against the fake Slack server, with the new flags and exit-2 hooks: 9 of 10 checks
-  passed (owner-only claims, witness, one signed reply in the thread, 🔕 respected, injection declined, nothing
-  elsewhere, $0.27); the 10th was a stale expectation from before the "on it" post was dropped, since updated.
-- Works offline: `sh kit/tests/run.sh`, 270 checks (hooks, fail-closed, STOP mid-run, claims, worker slots, threads,
-  self-DM, drawers per lane, routes, read-only tool lists, the fresh fix session, cost deltas and caps, the
-  red/green gate, install canaries, CRLF, cleanup).
-- [T] The OS sandbox on a machine that has it (this Linux has bubblewrap but no socat, so it fell back to unsandboxed,
-  as configured). Whether `uv run pytest` needs more than the re-opened `.venv`, uv cache and uv's Python under the
-  read block.
+- On the trainer's account, self-DM: the connector under `claude -p --permission-mode dontAsk` searches, reads,
+  reacts and replies in a thread; `hasmy::robot_face:` returns only the reacted message; threads; 👀/✅; answers
+  from the drawers.
+- The build prompts, run in order by a fresh agent on macOS (7 Oct), prompts 0 to 6: guard test 44/44, the canaries
+  12/12 denied, then a real 🤖 in the DM answered with 👀, one signed reply (`units.py:9`) and ✅; the guard log shows
+  exactly those five calls. Four prompt gaps found on the way are fixed in BUILD.md.
+- [T] Prompt 7 (stretch), the cleanup prompt and the file lane.
 - [T] Someone else's reaction excluded (needs a second account).
-- [T] The `edited` field in the connector's output (the MCP lane's edit check is prompt-only).
 - [T] Org policy for a normal participant: if send is set to `ask` for your workspace, `dontAsk` denies it.
-- [T] macOS and native Windows with the hardened kit (the Windows Store `python3` stub is caught by `setup.sh --check`).
+- [T] Linux and Windows.

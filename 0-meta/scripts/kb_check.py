@@ -23,7 +23,7 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 HOME = pathlib.Path.home()
-NO_INDEX = {"templates", "scripts", "inbox", "notes", "slack-bot"}  # folders that don't need a README index (slack-bot: code, not KB pages)
+NO_INDEX = {"templates", "scripts", "inbox", "notes", "slack-bot"}  # folders that don't need a README index (slack-bot: workshop material, not KB pages)
 TEXT_EXT = {".md", ".yaml", ".yml", ".json", ".py", ".sh", ".toml", ".txt", ".example", ".mdc"}
 SECRETS = [
     (r"AKIA[0-9A-Z]{16}", "AWS access key"),
