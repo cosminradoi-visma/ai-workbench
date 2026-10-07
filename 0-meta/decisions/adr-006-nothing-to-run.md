@@ -14,8 +14,9 @@ protect was a few hundred lines.
 
 The workbench contains only markdown and Claude Code settings. Nothing in it is executed.
 
-- **Guards** are settings Claude Code enforces: permission `deny` / `ask` rules, plus two `"type": "prompt"`
-  hooks, where a small model checks prompts for secrets and new prose for em-dashes.
+- **Guards** are settings Claude Code enforces: permission `deny` / `ask` rules; one `"type": "prompt"` hook,
+  where a small model checks prompts for secrets; and one line of `grep` inline in `settings.json` that keeps
+  em-dashes out of prose. That line is the only thing that executes, and there is no file for it.
 - **The health check** is the `kb-tidy` skill: the agent checks links, indexes, dates, sizes and likely secrets
   itself, and `/context` shows the boot cost. The score is `kb-score`.
 - **Golden tasks** run through the `golden-run` skill, not a runner script.
@@ -24,7 +25,9 @@ The workbench contains only markdown and Claude Code settings. Nothing in it is 
 
 - Nothing to install means nothing to break on a colleague's laptop, and nothing to review as code.
 - Tested on Claude Code 2.1.292: deny rules block `cat .env` through Bash too and hold against a user
-  "authorising" a force-push; the prompt hooks stopped a fake token and an em-dash, and let a harmless prompt through.
+  "authorising" a force-push; the prompt hook stopped 3 of 3 fake tokens and let harmless prompts through.
+- An em-dash prompt hook was tried first and let the dash through in half the runs (the agent also wrote
+  through the shell). A pattern is exact, so the em-dash rule stayed a pattern: one line, inline.
 
 ## Rejected
 
@@ -33,6 +36,7 @@ The workbench contains only markdown and Claude Code settings. Nothing in it is 
 
 ## Consequences
 
-The prompt hooks are a model's judgement: likely, not certain, and each costs about a second. When the em-dash hook
-blocks, the agent stops and you ask it to rewrite; a script could send the text back automatically. The mechanical
+The prompt hook is a model's judgement: likely, not certain, and about a second per prompt. The em-dash line needs
+`sh` and `grep` (Git for Windows brings them); without them it does nothing. When it blocks, the agent explains and
+rewrites when asked. The mechanical
 checks now cost a few agent turns once a week instead of running at every session start.

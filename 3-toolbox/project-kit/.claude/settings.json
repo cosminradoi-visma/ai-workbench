@@ -55,12 +55,12 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Write|Edit|MultiEdit",
+        "matcher": "Write|Edit|MultiEdit|Bash",
         "hooks": [
           {
-            "type": "prompt",
-            "timeout": 20,
-            "prompt": "House style: no em-dashes in prose. Hook input: $ARGUMENTS\n\nLook only at tool_input.file_path and the NEW text (tool_input.content, tool_input.new_string, or every edits[].new_string). It fails only if the path ends in .md, .mdx, .txt or .html and that new text contains an em-dash (U+2014). Anything else passes.\nReply with JSON only: {\"ok\": true} if it passes, or {\"ok\": false, \"reason\": \"No em-dashes in prose. Rewrite those sentences with a colon, a comma, or two sentences.\"}"
+            "type": "command",
+            "timeout": 5,
+            "command": "j=$(cat); d=$(printf '\\342\\200\\224'); printf '%s' \"$j\" | grep -qE '\"file_path\": *\"[^\"]*\\.(md|mdx|txt|html?)\"|>>? *[^ ]*\\.(md|mdx|txt|html?)' && printf '%s' \"$j\" | grep -qF -e \"$d\" -e '\\u2014' && { echo 'No em-dashes in prose. Rewrite those sentences with a colon, a comma, or two sentences.' >&2; exit 2; }; exit 0"
           }
         ]
       }

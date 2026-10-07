@@ -61,7 +61,7 @@ evergreen notes and Karpathy's LLM wiki; [ADR-005](0-meta/decisions/adr-005-know
 - **The usual failure is staleness.** Half of all AGENTS.md files are never updated. So there is a
   two-minute capture habit (`kb-capture`) and a check that flags stale pages.
 - **Prompts are advice; settings are guarantees.** So the safety rules that must hold are permission
-  rules Claude Code enforces, and two prompt hooks catch what a pattern can't. Nothing to run (ADR-006).
+  rules Claude Code enforces, a prompt hook catches pasted secrets, and one line keeps em-dashes out. No scripts (ADR-006).
 
 Sources: [`0-meta/decisions/research.md`](0-meta/decisions/research.md).
 

@@ -37,7 +37,7 @@ You need the repo path and the workbench path. Ask for whichever is missing.
      private half to the repo's `.claude/settings.json`: `Read(<workbench>/1-me/**)`, `Read(<workbench>/2-work/**)`,
      `Read(<workbench>/4-know/**)`, `Read(<workbench>/NOW.md)`, and the "who may start it, anyone can stop it" lines to `AGENTS.md`.
 5. **Guard rails:** merge the kit's `.claude/settings.json` into the repo's (union of the `deny` and `ask` lists, keep
-   existing hooks and add the kit's two prompt hooks) and copy `rules/tests.md`. Nothing to run: the guards are settings.
+   existing hooks and add the kit's two: the prompt guard and the em-dash line) and copy `rules/tests.md`. No scripts: the guards are settings.
    Add the repo's test command to `permissions.allow` (e.g. `Bash(make test)`), so the reviewer can run it.
 6. **Checks (drawer 7):** copy `.claude/agents/reviewer.md`, `.claude/skills/golden-run/` and `.claude/golden/` (README and the two examples as formats:
    `example.md` fails until you replace it).
