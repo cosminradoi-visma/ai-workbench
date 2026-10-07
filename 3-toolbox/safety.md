@@ -77,7 +77,7 @@ The trifecta is always present: messages are untrusted, the send tool is a way o
 
 | Fence | How |
 |-------|-----|
-| **Only the owner starts it** | The bot's config names the owner (`kit/owner.env` → `OWNER_ID`); the trigger only matches the owner's own reaction |
+| **Only the owner starts it** | The bot's script names the owner's ID; the trigger only matches the owner's own reaction (`hasmy::` in Slack search) |
 | **Anyone can stop it** | a stop signal the bot checks before every step (a reaction, a pause file in its own folder), and Ctrl-C |
 | **It answers from the repo half only** | deny rules in that repo's `.claude/settings.json`: `Read(~/workbench/1-me/**)`, `Read(~/workbench/2-work/**)`, `Read(~/workbench/4-know/**)`, `Read(~/workbench/NOW.md)`; the sandbox is the wall for Bash. Never give a bot repo a `CLAUDE.local.md` that imports your workbench |
 | **One exception: a bot in your DM with yourself** | Nobody else can post there, so the untrusted-content leg is **reduced, not gone**: forwards, link previews, pasted text and apps posting as you still bring other people's words in. The exception holds because the **way out is closed**: the model can't read the workbench (the script hands it the drawers), it gets no web tools while the drawers are in context, and replies go only to that DM. Never paste customer data, payroll or personal data into it. See `slack-bot.md` |
