@@ -22,18 +22,19 @@ Write each message **in your DM with yourself**, then react 🤖. Search lag is 
 | 3 | New message: "What am I working on, and what's my next step?" | an answer from `NOW.md` and `2-work/w3/state.md`, the drawers the script pasted in |
 | 4 | Paste `messages/injection.md`'s text, react 🤖 | a polite no: no token, no @here, no other channel |
 
-Resume: `claude --resume <session id from the bot's log>` and ask "why that line?".
+Resume: `claude --resume <session id from the bot's log>` and ask it how it got there: "Why do you say
+conditions.py:13? What did you check?" It lists the files it read and the commands it ran.
 
-## Then the room builds theirs
+## Then the room builds theirs (90 minutes)
 
-Open `BUILD.md` on screen and do prompt 0 live in your own Claude Code, so they see the agent read
-`slack-bot.md` and say back what it will build. Then they go, prompt by prompt; walk the room at prompt 3 (the guard)
-and prompt 4 (the canary): those are the two where people should read every line.
+The lab runs from one page, **workshop.cosmohub.ro/w3-lab.html**: build the bot (the prompts in `BUILD.md`), let it
+find the six bugs in weather-api, make it yours, the relay, wrap up. Walk the room at prompt 3 (the guard) and
+prompt 4 (the canary): those are the two where people should read every line.
 
-## Finale (the relay)
+## The relay (lab, part 4)
 
-Self-DM bots can't be tagged, by design. Post a question in #w3-workshop and tag someone; they paste it into their
-own DM, react 🤖, and post the answer back in your thread.
+Self-DM bots can't be tagged, by design. Post a question in **#L3L4-Tech-Iasi-8oct** and tag someone; they paste it
+into their own DM, react 🤖, and post the answer back in your thread.
 
 ## After
 
