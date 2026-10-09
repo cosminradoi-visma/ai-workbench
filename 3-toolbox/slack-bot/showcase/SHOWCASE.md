@@ -27,13 +27,13 @@ conditions.py:13? What did you check?" It lists the files it read and the comman
 
 ## Then the room builds theirs (90 minutes)
 
-The lab runs from one page, **workshop.cosmohub.ro/w3-lab.html**: build the bot (the prompts in `BUILD.md`), let it
+The lab runs from one page (in the course, the workshop app's lab page): build the bot (the prompts in `BUILD.md`), let it
 find the six bugs in weather-api, make it yours, the relay, wrap up. Walk the room at prompt 3 (the guard) and
 prompt 4 (the canary): those are the two where people should read every line.
 
 ## The relay (lab, part 4)
 
-Self-DM bots can't be tagged, by design. Post a question in **#L3L4-Tech-Iasi-8oct** and tag someone; they paste it
+Self-DM bots can't be tagged, by design. Post a question in **the course channel** and tag someone; they paste it
 into their own DM, react 🤖, and post the answer back in your thread.
 
 ## After

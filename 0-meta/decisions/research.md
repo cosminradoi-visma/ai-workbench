@@ -43,16 +43,13 @@ field moves monthly.
 | "Never use results they do not understand, cannot explain, or that do not refer to credible sources" | [Visma, Responsible AI](https://www.visma.com/commitments/responsible-ai) | "You own what you merge" |
 | AI literacy duty for deployers (Art. 4), in force since Feb 2025 | [EU AI Act Art. 4](https://www.regulation-ai.eu/en/articles/article-4/) [secondary] | The workshop itself counts as a literacy measure |
 
-## Visma policy (internal, read 2026-10-02)
+## Company policy
 
-| Source | What it says | Changed |
-|--------|--------------|---------|
-| Visma Group "Artificial Intelligence \| Guideline" (Group Legal & Compliance, reviewed 2025-02-10) | GDPR; protect confidential info/IP; customer data only if the contract allows; check AI code for licence issues; don't use output you can't explain; accidental personal data → security@visma.com | `safety.md` rules and "if something goes wrong" |
-| Visma Group IS-010 Information Classification and Handling | Public · Internal · Restricted · Customer-owned | The data-class table |
-| Visma Solutions SOL-POL-002 + "Using Claude with company data" (2026-10-02) | A stricter local scheme: customer and Art. 9 data never; Restricted only with written approval; personal data one-off and minimised; no ranking/scoring/monitoring people; keep the conversation and report the same day | Worked example of a local scheme; incident steps |
-| Visma Slack (#ai-tools-for-developers, 2026-05; an HR+ dev channel, 2026-09) | Org policy disables auto mode and Remote Control for some users | "Modes" note: follow company policy |
-
-These are internal documents: cite them by name, don't copy them into public places.
+The data-class table and the shared rules in `3-toolbox/safety.md` were checked against a large
+software company's internal AI guideline and information-classification policy (October 2026).
+Those documents are internal, so they are not quoted here: **read your own company's versions** and
+adjust `safety.md` to them. Settings worth checking with your admins: whether `auto` mode or Remote
+Control is disabled for you by managed policy.
 
 ## Organising the knowledge (2026-10-07)
 

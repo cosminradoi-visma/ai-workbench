@@ -43,7 +43,7 @@ holds them. If a read is blocked, say which folder to add; never work around it.
 Plus the `/insights` report if they gave a path.
 
 **Never** compute anything about other people: no commit counts per colleague, no "most active", no
-rankings (Visma: never rank or monitor people). Colleagues appear only as names with what they own,
+rankings (never rank or monitor people). Colleagues appear only as names with what they own,
 from `CODEOWNERS` or from what the owner tells you.
 
 ## 2. Show what you found, then propose

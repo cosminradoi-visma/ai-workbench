@@ -1,7 +1,7 @@
 ---
 updated: 2026-10-07
 status: draft
-verified: the design and the lessons, on the claude.ai Slack connector, Visma workspace, the trainer's self-DM (5–7 Oct). The build prompts, run in order by a fresh agent (7 Oct). Untested items are marked [T].
+verified: the design and the lessons, on the claude.ai Slack connector, a company workspace, the trainer's self-DM (5–7 Oct). The build prompts, run in order by a fresh agent (7 Oct). Untested items are marked [T].
 ---
 
 # A Slack bot that uses your workbench (W3, part 2)

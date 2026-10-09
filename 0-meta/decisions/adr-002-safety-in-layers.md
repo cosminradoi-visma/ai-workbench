@@ -1,12 +1,12 @@
 # ADR-002: Safety comes from settings, sandbox and hooks; prose only explains
 
 **Date:** 2026-10-02 · **Status:** Proposed · **Decided by:** Cosmin Radoi
-**Source:** [`research.md`](research.md) §Safety; Visma Responsible AI commitments
+**Source:** [`research.md`](research.md) §Safety; public responsible-AI commitments
 
 ## Context
 
 Instructions in `CLAUDE.md` are advisory: the model usually follows them, and nothing
-guarantees it. Visma handles payroll, HR and accounting data under GDPR. Agents read
+guarantees it. Business software handles payroll, HR and accounting data under GDPR. Agents read
 untrusted content all the time (issues, READMEs, web pages, MCP results) and can be
 redirected by it. Malware has already used installed AI CLIs in "skip permissions" mode
 to hunt for credentials (the Nx npm compromise, Aug 2025).

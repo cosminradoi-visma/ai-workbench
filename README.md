@@ -91,6 +91,32 @@ install works without admin). macOS: `xcode-select --install`. Linux: your packa
 
 Copilot, Cursor and Codex read `AGENTS.md`, so the KB works there too. The skills and hooks are Claude Code's.
 
+## Learn it on your own (about two hours)
+
+The same path as the course, at your own pace. Every step happens on your laptop.
+
+1. **First contact (5 min).** Before you change anything, ask your fresh workbench: "Where am I on orders-api, and
+   what's next?" and "Who signs off refunds in prod, and why is money in cents?". Watch what it opens: an index,
+   then one page. Then `/context`: the Memory files line is everything it loaded before your first word.
+2. **Let it find out who you are (25 min).** `/add-dir <your code folder>`, then `/kb-setup`. It reads your repos and
+   your own commits, proposes how to organise them, and writes after your yes. It ends with your workbench card.
+   Then `/clear` and ask "Where am I, and what's next?" again.
+3. **Try to make it leak (10 min).** [`3-toolbox/playground/TRY.md`](3-toolbox/playground/TRY.md): four tries, three
+   guards, one honest miss. Then read `.claude/settings.json`, where all of them live.
+4. **Link a real repo (30 min).** `/kb-link-repo <path>`. In a fresh session there, ask "How do I run and test this?"
+   It should answer from `## Operate` without exploring. No repo you can use? `git clone https://github.com/expressjs/cors`.
+5. **Write down what only you know (30 min).** Three pages in `4-know/`: the system you touch most, a person you work
+   with, a task you repeat. Or say "interview me about <next week's task>" and let it write the spec.
+6. **A second pair of eyes (7 min).** In that repo, make one small change and say "Use the reviewer agent to review
+   the current changes." Then write one golden task from a bug you already fixed and run `/golden-run`.
+7. **The habit (8 min).** Say "capture", then "score my workbench". Tomorrow morning, "standup"; at the end of the
+   day, "wrap up".
+8. **Give it a job (optional, 90 min).** [`3-toolbox/slack-bot/BUILD.md`](3-toolbox/slack-bot/BUILD.md): build a bot in
+   your own Slack DM, by prompting, reading every file before it runs.
+
+[`3-toolbox/tips.md`](3-toolbox/tips.md) opens with six tricks worth trying today; [`3-toolbox/cheatsheet.html`](3-toolbox/cheatsheet.html)
+is the same on one printable page.
+
 ## What's where
 
 ```
