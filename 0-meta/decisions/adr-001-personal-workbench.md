@@ -10,7 +10,7 @@ per layer, GitBook, Confluence and Notion adapters, five company layers. Used as
 `CLAUDE.md` imports a 29 KB boot file, about 7,400 tokens loaded before the first
 question. Most of it covers platforms and approval flows one person never uses. Its
 personal variant is lighter but fetches its skills from a remote URL at runtime,
-which adds a network dependency and a trust boundary. Colleagues at Visma need their
+which adds a network dependency and a trust boundary. Colleagues need their
 own context, kept safely and cheaply.
 
 ## Decision

@@ -9,7 +9,7 @@ updated: YYYY-MM-DD
 
 ## Who I am
 
-- Role: <!-- e.g. Senior backend developer, <team>, <Visma company> -->
+- Role: <!-- e.g. Senior backend developer, <team>, <company> -->
 - I work on: <!-- products / domains, one line -->
 - Daily stack: <!-- languages, frameworks, cloud, tools -->
 
